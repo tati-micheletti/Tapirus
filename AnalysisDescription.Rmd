@@ -1,0 +1,43 @@
+---
+title: "Tapirus - Cerrado"
+author: "Tati Micheletti"
+date: "21 January 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Project Description
+
+The present project aimed at ...
+
+# Hematology and Biochemestry
+
+## Analysis summary
+
+The following analysis were performed for the results to be comparable to the `"Health Assessment of Wild Lowland Tapirs"` *[Journal of Wildlife Disease, 2014]*.
+
+1. Shapiro-Wilk to test Normality of Samples
+ 1a. Non-normal try transform [log(e)] --> test SW again
+  1a1. Non-normal again --> NON PARAMETRIC
+ 1b. Normal, pass to 2.
+2. Levene's test of Variance homogeneity
+ 2a. Non-homogeneous try transform [log(e)] --> test Levene again
+  2a1. Non-homogeneous --> NON PARAMETRIC
+ 2b. Normal, use --> PARAMETRIC
+
+The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Males Juv x Pantanal Males Adults and only the variables that were *not signifficant* for each group were compared on the next level.
+
+## Coding
+
+### Load Data
+
+Loading the data to work with from a `.csv` file.
+```{r load}
+library(data.table)
+hembio <- fread("hematobioqFull.csv")
+```
+
+
