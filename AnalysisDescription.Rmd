@@ -20,13 +20,16 @@ The present project aimed at ...
 The following analysis were performed for the results to be comparable to the `"Health Assessment of Wild Lowland Tapirs"` *[Journal of Wildlife Disease, 2014]*.
 
 1. Shapiro-Wilk to test Normality of Samples
- 1a. Non-normal try transform [log(e)] --> test SW again
-  1a1. Non-normal again --> NON PARAMETRIC
- 1b. Normal, pass to 2.
+  + 1a. Non-normal try transform [log(e)] --> test SW again
+    -  1a1. Non-normal again --> NON PARAMETRIC
+  + 1b. Normal, pass to 2.
 2. Levene's test of Variance homogeneity
- 2a. Non-homogeneous try transform [log(e)] --> test Levene again
-  2a1. Non-homogeneous --> NON PARAMETRIC
- 2b. Normal, use --> PARAMETRIC
+  + 2a. Non-homogeneous try transform [log(e)] --> test Levene again
+    -  2a1. Non-homogeneous --> NON PARAMETRIC
+  + 2b. Normal, use --> PARAMETRIC
+
+FOR NON-PARAMETRIC SAMPLES: `Kruskal-Wallis` test for more than 2 classes or `Mann-Whitney U` test for 2 classes
+FOR PARAMETRIC SAMPLES: `ANOVA` for more than 2 classes or `T-TEST` for 2 classes
 
 The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Males Juv x Pantanal Males Adults and only the variables that were *not signifficant* for each group were compared on the next level.
 
@@ -37,8 +40,14 @@ The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Mal
 Loading the data to work with from a `.csv` file.
 ```{r load}
 library(data.table)
+
 hembio <- fread("hematobioqFull.csv")
 hembio <- as.data.frame(hembio) # Easier to perform the Shapiro-test
+```
+
+Here is the final complete table for biochemestry and hemathology (Mata Atlantica, Pantanal and Cerrado):
+```{r Table HEMBIO, eval=TRUE, echo=FALSE}
+knitr::kable(hembio)
 ```
 
 ### 2. Shapiro-Wilk test
@@ -48,14 +57,99 @@ This test was performed to observe if the samples have a relatively normal distr
 sw.test <- list()
 for (i in 5:ncol(hembio)){
 sw.test[[i]] <- shapiro.test(hembio[,i])
-sw.test[[i]] <- sw.test[[i]]$p.value
-}
+sw.test[[i]] <- sw.test[[i]]$p.value}
+
 Variables <- colnames(hembio[,5:ncol(hembio)])
 sw.pvalue <- as.numeric(unlist(sw.test))
-sw.results <- data.frame(cols, sw.pvalue)
+sw.results <- data.frame(Variables, sw.pvalue)
 sw.results$Normality <- NA
 sw.results <- as.data.table(sw.results)
-
-sw.results$Normality <- sw.results[,apply()] # FINISH THIS. For values >0.05, write "NORMAL". Subset by the !NORMAL. Apply log(e). Test again. Write NORMAL or NON-NORMAL. Do the same for Levene "HOMOGENEOUS" - "NON-HOMOG". The variables that are NORMAL & HOMOGENEOUS, use parametric, the others non parametric, group by variables in col 2:4.
+for (i in 1:nrow(sw.results)){
+   if (sw.results$sw.pvalue[i]>0.05){
+       sw.results$Normality[i] <- "NORMAL" }}
 ```
+
+Variables that have a normal distribution are marked as `NORMAL` in the `Normality` column.
+
+```{r primary results shapiro, echo=FALSE, eval=TRUE}
+knitr::kable(sw.results)
+```
+
+Now, variables that are not normal (described as `NA` in the `Normality` column) have to be log(e) - natural logarithm - transforemed and tested again:
+
+```{r variables transformation}
+var.transform <- as.character(sw.results$Variables[is.na(sw.results$Normality)])
+hembio.log <- cbind(hembio[,1:4],log(hembio[,var.transform]))
+```
+
+```{r variables transformed, echo=FALSE, eval=TRUE}
+knitr::kable(hembio.log)
+```
+
+Now we apply again the Shapiro-Wilk test on the transformed variables and see if any of them can be used:
+```{r shapiro-test2}
+sw.test2 <- list()
+for (i in 5:ncol(hembio.log)){
+sw.test2[[i]] <- shapiro.test(hembio.log[,i])
+sw.test2[[i]] <- sw.test2[[i]]$p.value}
+
+Variables <- colnames(hembio.log[,5:ncol(hembio.log)])
+sw.pvalue <- as.numeric(unlist(sw.test2))
+sw.results2 <- data.frame(Variables, sw.pvalue)
+sw.results2$Normality <- NA
+sw.results2 <- as.data.table(sw.results2)
+for (i in 1:nrow(sw.results2)){
+   if (sw.results2$sw.pvalue[i]>0.05){
+       sw.results2$Normality[i] <- "NORMAL" }}
+```
+
+Variables that presented a normal distribution after transformation are marked as `NORMAL` in the `Normality` column.
+
+```{r secondary results shapiro, echo=FALSE, eval=TRUE}
+knitr::kable(sw.results2)
+non.normal <- as.character(sw.results2$Variables[is.na(sw.results2$Normality)])
+non.normal <- as.character(sw.results2$Variables[is.na(sw.results2$Normality)])
+```
+
+List of variables that will naturally be treated as `NON-NORMAL`, and therefore will be analyzed with `NON-PARAMETRIC` tests:
+```{r non parametric, echo=FALSE, eval=TRUE}
+knitr::kable(sw.results2[is.na(sw.results2$Normality)])
+```
+**NOTE: It is important to not that more variables will be added to this list after the homogeneity test.**  
+
+### 3. Levene's test
+
+After the normality test, the Levene's test for homogeneity of variance across groups needs to be performed on the following variables: 
+```{r homogen, echo=FALSE, eval=TRUE}
+library(car)
+normal <- c(as.character(sw.results$Variables[!is.na(sw.results$Normality)]), 
+            as.character(sw.results2$Variables[!is.na(sw.results2$Normality)]))
+hembio.homog <- cbind(hembio[,1:4],hembio[normal])
+knitr::kable(hembio.homog)
+```
+
+This test was performed to observe if the samples present a homogeneity of variances. Each answer was stored on a table:
+```{r levene}
+source(file.path(getwd(),"R functions/Levene.R"))
+
+lv.pant.m <- levene.p(pant.m,5)
+lv.pant.f <- levene.p(pant.f,5)
+
+lv.atl.m <- levene.p(atl.m,5)
+lv.atl.f <- levene.p(atl.f,5)
+
+lv.cerr.m <- levene.p(cerr.m,5)
+lv.cerr.f <- levene.p(cerr.f,5)
+```
+
+All variables presented homogeneity of variances:
+```{r homogen table, echo=FALSE, eval=TRUE}
+knitr::kable(sw.results2[is.na(sw.results2$Normality)])
+```
+
+Write NORMAL or NON-NORMAL. Do the same for Levene "HOMOGENEOUS" - "NON-HOMOG". The variables that are NORMAL & HOMOGENEOUS, use parametric, the others non parametric, group by variables in col 2:4.
+
+
+
+
 
