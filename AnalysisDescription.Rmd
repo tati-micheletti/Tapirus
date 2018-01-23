@@ -32,12 +32,30 @@ The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Mal
 
 ## Coding
 
-### Load Data
+### 1. Load Data
 
 Loading the data to work with from a `.csv` file.
 ```{r load}
 library(data.table)
 hembio <- fread("hematobioqFull.csv")
+hembio <- as.data.frame(hembio) # Easier to perform the Shapiro-test
 ```
 
+### 2. Shapiro-Wilk test
+
+This test was performed to observe if the samples have a relatively normal distribution. Each answer was stored on a table:
+```{r shapiro-test}
+sw.test <- list()
+for (i in 5:ncol(hembio)){
+sw.test[[i]] <- shapiro.test(hembio[,i])
+sw.test[[i]] <- sw.test[[i]]$p.value
+}
+Variables <- colnames(hembio[,5:ncol(hembio)])
+sw.pvalue <- as.numeric(unlist(sw.test))
+sw.results <- data.frame(cols, sw.pvalue)
+sw.results$Normality <- NA
+sw.results <- as.data.table(sw.results)
+
+sw.results$Normality <- sw.results[,apply()] # FINISH THIS. For values >0.05, write "NORMAL". Subset by the !NORMAL. Apply log(e). Test again. Write NORMAL or NON-NORMAL. Do the same for Levene "HOMOGENEOUS" - "NON-HOMOG". The variables that are NORMAL & HOMOGENEOUS, use parametric, the others non parametric, group by variables in col 2:4.
+```
 
