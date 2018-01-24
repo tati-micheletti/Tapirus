@@ -5,3 +5,5 @@
 .csv
 .xlsx
 /Data
+.httr-oauth
+.*.rds
