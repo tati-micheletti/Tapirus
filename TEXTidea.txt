@@ -1,0 +1,14 @@
+A intenção é fazer um paper bastante similar ao que publicamos em 2014, com as mesmas análises, e comparar os dados de saúde do Cerrado 
+(onde acreditamos que os animais estão zoados) com dados de animais saudáveis (Mata Atlântica e Pantanal). Sacou?? 
+
+No paper de 2014, comparamos nossos dados PA e MA com dados de antas em cativeiro (usando o ISIS), lembra? Agora o esquema vai ser CE x PA x MA.
+
+Ainda estão faltando alguns resultados de diagnóstico de doenças (pouca coisa). As amostras já estão nos respectivos laboratórios, 
+mas não tenho como ter certeza de quando estaremos com esses resultados em mãos.
+
+Então, minha sugestão seria começar por HEMATOLOGIA e BIOQUÍMICA. Coloquei essa parte na segunda aba da planilha, e já fiz as conversões para 
+UNIDADES INTERNACIONAIS. Temos que calcular média, desvio padrão, etc, etc, etc, como fizemos com os dados do Pantanal e Mata Alântica.
+
+Depois disso, podemos fazer a parte de CULTURAS MICROBIOLÓGICAS, que também já está pronta.
+
+Vc tem os arquivos do paper de 2014?? Me diz o que vc precisa que eu te mando!
