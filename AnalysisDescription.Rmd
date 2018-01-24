@@ -40,7 +40,6 @@ The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Mal
 Loading the data to work with from a `.csv` file.
 ```{r load}
 library(data.table)
-
 hembio <- fread("hematobioqFull.csv")
 hembio <- as.data.frame(hembio) # Easier to perform the Shapiro-test
 ```
@@ -108,7 +107,6 @@ Variables that presented a normal distribution after transformation are marked a
 ```{r secondary results shapiro, echo=FALSE, eval=TRUE}
 knitr::kable(sw.results2)
 non.normal <- as.character(sw.results2$Variables[is.na(sw.results2$Normality)])
-non.normal <- as.character(sw.results2$Variables[is.na(sw.results2$Normality)])
 ```
 
 List of variables that will naturally be treated as `NON-NORMAL`, and therefore will be analyzed with `NON-PARAMETRIC` tests:
@@ -132,20 +130,33 @@ This test was performed to observe if the samples present a homogeneity of varia
 ```{r levene}
 source(file.path(getwd(),"R functions/Levene.R"))
 
+  pant.m <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Male",] #Age was used for grouping: most restrictive comparison
+  pant.f <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Female",]
+  atl <- hembio.homog[hembio.homog$Biome=="Atlantic",] #Can't be performed at Age level because have only one juvenile, performed at Sex level
+  cerr.m <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Male",]
+  cerr.f <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Female",]
+
+  
 lv.pant.m <- levene.p(pant.m,5)
 lv.pant.f <- levene.p(pant.f,5)
 
-lv.atl.m <- levene.p(atl.m,5)
-lv.atl.f <- levene.p(atl.f,5)
+lv.atl <- levene2.p(atl,5) 
 
-lv.cerr.m <- levene.p(cerr.m,5)
-lv.cerr.f <- levene.p(cerr.f,5)
+lv.cerr.m <- levene.p(cerr.m,7)
+lv.cerr.f <- levene.p(cerr.f,7)
 ```
 
-All variables presented homogeneity of variances:
-```{r homogen table, echo=FALSE, eval=TRUE}
-knitr::kable(sw.results2[is.na(sw.results2$Normality)])
+```{r homogen fina tables, echo=FALSE, eval=TRUE}
+knitr::kable(lv.pant.m)
+knitr::kable(lv.pant.f)
+knitr::kable(lv.atl)
+knitr::kable(lv.cerr.m)
+knitr::kable(lv.cerr.f)
 ```
+
+Only `LeucocitosTotais` and `ColesterolFracionadoHDL` are not homogenous for Males from Pantanal, and females from Pantanal, respectively. These should also be performed as Non-Parametric for all analysis since at least in one group these are not homogenous.
+
+` MAKE A FINAL TABLE HERE WITH NORMALITY AND HOMOGENEITY FOR EACH VARIABLE AND THE RESPECTIVE TESTS TO BE APPLIED AND AT WHICH VARIABLES (BIOME, SEX, AGE or just BIOME, SEX) or a column that shows KW or TEST T FOR EACH ONE AT EACH LEVEL? Think this through...`
 
 Write NORMAL or NON-NORMAL. Do the same for Levene "HOMOGENEOUS" - "NON-HOMOG". The variables that are NORMAL & HOMOGENEOUS, use parametric, the others non parametric, group by variables in col 2:4.
 
