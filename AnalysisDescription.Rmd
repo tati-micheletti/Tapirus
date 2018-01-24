@@ -7,6 +7,13 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(rdrop2)
+# Next three lines below should only be run for the first time you run the script 
+# (still have to check if need to be re-run after turning off the computer or smth).
+# drop_auth()
+# token <- drop_auth()
+# saveRDS(token, file = "token.rds")
 ```
 
 # Project Description
@@ -39,14 +46,12 @@ The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Mal
 
 Loading the data to work with from a `.csv` file.
 ```{r load}
-library(data.table)
-hembio <- fread("hematobioqFull.csv")
-hembio <- as.data.frame(hembio) # Easier to perform the Shapiro-test
+hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv")
 ```
 
 Here is the final complete table for biochemestry and hemathology (Mata Atlantica, Pantanal and Cerrado):
 ```{r Table HEMBIO, eval=TRUE, echo=FALSE}
-knitr::kable(hembio)
+knitr::kable(as.data.table(hembio))
 ```
 
 ### 2. Shapiro-Wilk test
