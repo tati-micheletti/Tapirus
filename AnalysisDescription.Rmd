@@ -9,11 +9,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(data.table)
 library(rdrop2)
-# Next three lines below should only be run for the first time you run the script 
-# (still have to check if need to be re-run after turning off the computer or smth).
-# drop_auth()
-# token <- drop_auth()
-# saveRDS(token, file = "token.rds")
+ drop_auth()
+ token <- drop_auth()
+ saveRDS(token, file = "token.rds")
 ```
 
 # Project Description
@@ -47,7 +45,9 @@ The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Mal
 Loading the data to work with from a `.csv` file.
 ```{r load}
 hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv")
+hembio <- test[ , order(names(test))]
 ```
+**SIDENOTE: If the dataloading fails, turn on the VPN!.**
 
 Here is the final complete table for biochemestry and hemathology (Mata Atlantica, Pantanal and Cerrado):
 ```{r Table HEMBIO, eval=TRUE, echo=FALSE}
@@ -77,6 +77,7 @@ Variables that have a normal distribution are marked as `NORMAL` in the `Normali
 
 ```{r primary results shapiro, echo=FALSE, eval=TRUE}
 knitr::kable(sw.results)
+nat.normal <- as.character(sw.results$Variables[!is.na(sw.results$Normality)])
 ```
 
 Now, variables that are not normal (described as `NA` in the `Normality` column) have to be log(e) - natural logarithm - transforemed and tested again:
@@ -87,7 +88,7 @@ hembio.log <- cbind(hembio[,1:4],log(hembio[,var.transform]))
 ```
 
 ```{r variables transformed, echo=FALSE, eval=TRUE}
-knitr::kable(hembio.log)
+knitr::kable(as.data.table(hembio.log))
 ```
 
 Now we apply again the Shapiro-Wilk test on the transformed variables and see if any of them can be used:
@@ -103,7 +104,7 @@ sw.results2 <- data.frame(Variables, sw.pvalue)
 sw.results2$Normality <- NA
 sw.results2 <- as.data.table(sw.results2)
 for (i in 1:nrow(sw.results2)){
-   if (sw.results2$sw.pvalue[i]>0.05){
+   if (is.finite(sw.results2$sw.pvalue[i])&sw.results2$sw.pvalue[i]>0.05){
        sw.results2$Normality[i] <- "NORMAL" }}
 ```
 
@@ -112,6 +113,7 @@ Variables that presented a normal distribution after transformation are marked a
 ```{r secondary results shapiro, echo=FALSE, eval=TRUE}
 knitr::kable(sw.results2)
 non.normal <- as.character(sw.results2$Variables[is.na(sw.results2$Normality)])
+normal.trans <- as.character(sw.results2$Variables[!is.na(sw.results2$Normality)])
 ```
 
 List of variables that will naturally be treated as `NON-NORMAL`, and therefore will be analyzed with `NON-PARAMETRIC` tests:
@@ -125,24 +127,27 @@ knitr::kable(sw.results2[is.na(sw.results2$Normality)])
 After the normality test, the Levene's test for homogeneity of variance across groups needs to be performed on the following variables: 
 ```{r homogen, echo=FALSE, eval=TRUE}
 library(car)
-normal <- c(as.character(sw.results$Variables[!is.na(sw.results$Normality)]), 
-            as.character(sw.results2$Variables[!is.na(sw.results2$Normality)]))
+normal <- c(nat.normal, normal.trans)
 hembio.homog <- cbind(hembio[,1:4],hembio[normal])
-knitr::kable(hembio.homog)
+knitr::kable(as.data.table(hembio.homog))
 ```
 
 This test was performed to observe if the samples present a homogeneity of variances. Each answer was stored on a table:
 ```{r levene}
 source(file.path(getwd(),"R functions/Levene.R"))
+source(file.path(getwd(),"R functions/Levene2.R"))
 
-  pant.m <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Male",] #Age was used for grouping: most restrictive comparison
+#  pant <- hembio.homog[hembio.homog$Biome=="Pantanal",] #Age was used for grouping: most restrictive comparison
+  pant.m <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Male",]
   pant.f <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Female",]
   atl <- hembio.homog[hembio.homog$Biome=="Atlantic",] #Can't be performed at Age level because have only one juvenile, performed at Sex level
   cerr.m <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Male",]
   cerr.f <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Female",]
 
-  
+  # Still not working...
+  # 
 lv.pant.m <- levene.p(pant.m,5)
+lv.pant <- t.levene.p(pant,5)
 lv.pant.f <- levene.p(pant.f,5)
 
 lv.atl <- levene2.p(atl,5) 
