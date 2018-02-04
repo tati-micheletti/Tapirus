@@ -45,7 +45,7 @@ The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Mal
 Loading the data to work with from a `.csv` file.
 ```{r load}
 hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv")
-hembio <- test[ , order(names(test))]
+#hembio <- test[ , order(names(test))] # Don't remember why this... =/
 ```
 **SIDENOTE: If the dataloading fails, turn on the VPN!.**
 
@@ -118,7 +118,8 @@ normal.trans <- as.character(sw.results2$Variables[!is.na(sw.results2$Normality)
 
 List of variables that will naturally be treated as `NON-NORMAL`, and therefore will be analyzed with `NON-PARAMETRIC` tests:
 ```{r non parametric, echo=FALSE, eval=TRUE}
-knitr::kable(sw.results2[is.na(sw.results2$Normality)])
+sw.results2$Normality[is.na(sw.results2$Normality)] <- "NON-NORMAL"
+knitr::kable(sw.results2[sw.results2$Normality=="NON-NORMAL"])
 ```
 **NOTE: It is important to not that more variables will be added to this list after the homogeneity test.**  
 
@@ -137,26 +138,22 @@ This test was performed to observe if the samples present a homogeneity of varia
 source(file.path(getwd(),"R functions/Levene.R"))
 source(file.path(getwd(),"R functions/Levene2.R"))
 
-#  pant <- hembio.homog[hembio.homog$Biome=="Pantanal",] #Age was used for grouping: most restrictive comparison
   pant.m <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Male",]
   pant.f <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Female",]
   atl <- hembio.homog[hembio.homog$Biome=="Atlantic",] #Can't be performed at Age level because have only one juvenile, performed at Sex level
   cerr.m <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Male",]
   cerr.f <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Female",]
 
-  # Still not working...
-  # 
-lv.pant.m <- levene.p(pant.m,5)
-lv.pant <- t.levene.p(pant,5)
-lv.pant.f <- levene.p(pant.f,5)
-
-lv.atl <- levene2.p(atl,5) 
-
-lv.cerr.m <- levene.p(cerr.m,7)
-lv.cerr.f <- levene.p(cerr.f,7)
+  #STILL NOT WORKING ==> CHECK
+  
+lv.pant.m <- levene.p(pant.m,5, "Age")
+lv.pant.f <- levene.p(pant.f,5, "Age")
+lv.atl <- levene.p(atl,5, "Sex") 
+lv.cerr.m <- levene.p(cerr.m,5)
+lv.cerr.f <- levene.p(cerr.f,5)
 ```
 
-```{r homogen fina tables, echo=FALSE, eval=TRUE}
+```{r homogen final tables, echo=FALSE, eval=TRUE}
 knitr::kable(lv.pant.m)
 knitr::kable(lv.pant.f)
 knitr::kable(lv.atl)
