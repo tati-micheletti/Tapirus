@@ -136,7 +136,7 @@ knitr::kable(as.data.table(hembio.homog))
 This test was performed to observe if the samples present a homogeneity of variances. Each answer was stored on a table:
 ```{r levene}
 source(file.path(getwd(),"R functions/Levene.R"))
-source(file.path(getwd(),"R functions/Levene2.R"))
+# source(file.path(getwd(),"R functions/Levene2.R"))
 
   pant.m <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Male",]
   pant.f <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Female",]
@@ -144,13 +144,11 @@ source(file.path(getwd(),"R functions/Levene2.R"))
   cerr.m <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Male",]
   cerr.f <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Female",]
 
-  #STILL NOT WORKING ==> CHECK
-  
 lv.pant.m <- levene.p(pant.m,5, "Age")
 lv.pant.f <- levene.p(pant.f,5, "Age")
 lv.atl <- levene.p(atl,5, "Sex") 
-lv.cerr.m <- levene.p(cerr.m,5)
-lv.cerr.f <- levene.p(cerr.f,5)
+lv.cerr.m <- levene.p(cerr.m,5, "Age")
+lv.cerr.f <- levene.p(cerr.f,5, "Age")
 ```
 
 ```{r homogen final tables, echo=FALSE, eval=TRUE}
@@ -161,7 +159,32 @@ knitr::kable(lv.cerr.m)
 knitr::kable(lv.cerr.f)
 ```
 
-Only `LeucocitosTotais` and `ColesterolFracionadoHDL` are not homogenous for Males from Pantanal, and females from Pantanal, respectively. These should also be performed as Non-Parametric for all analysis since at least in one group these are not homogenous.
+The following variables were not homogeneous for the following groups:
+PANTANAL: MALES: `Plaquetas`, `LeucocitosTotais` and `LactatoDesigrogenase`
+PANTANAL: FEMALES: `ColesterolFracionadoHDL` and `LactatoDesigrogenase`
+ATLANTIC: BOTH SEXES: `ColesterolFracionadoLDL`,  `ColesterolFracionadoVLDL` and `LactatoDesigrogenase`
+CERRADO: MALES: `Hemoglobina` and `Plaquetas`
+CERRADO: FEMALES: `Hemoglobina`, `Plaquetas` and `ColesterolFracionadoVLDL`
+
+```{r vector non homogenous}
+non.homo <- c("Plaquetas", "LeucocitosTotais", "LactatoDesigrogenase", "ColesterolFracionadoHDL", "ColesterolFracionadoLDL", "ColesterolFracionadoVLDL", "Hemoglobina", "Plaquetas")
+```
+
+Therefore, these will be tested using `NON-PARAMETRIC` statistics, since at least in one group these are not homogenous.
+
+The following table presents a summary of the analysis to be performed for each variable:
+
+```{r full table, echo=FALSE, eval=TRUE}
+all.var <- colnames(hembio[,c(5:ncol(hembio))])
+# NEED TO CONSTRUCT A TABLE WITH
+# ROWS: VARIABLES
+# COLS: NORMAL (YES/NO), HOMOGENOUS (YES/NO), TEST (PARAMTERIC / NON-PARAMETRIC or even better, check exactly which test will be performed, so I can built up a function using this table!)
+
+final.table <- data.frame(VARIABLES = all.var) #STILL NEEDS TO BE FINISHED
+
+knitr::kable()
+```
+
 
 ` MAKE A FINAL TABLE HERE WITH NORMALITY AND HOMOGENEITY FOR EACH VARIABLE AND THE RESPECTIVE TESTS TO BE APPLIED AND AT WHICH VARIABLES (BIOME, SEX, AGE or just BIOME, SEX) or a column that shows KW or TEST T FOR EACH ONE AT EACH LEVEL? Think this through...`
 
