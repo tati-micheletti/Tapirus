@@ -177,8 +177,11 @@ Therefore, these will be tested using `NON-PARAMETRIC` statistics, since at leas
 The following table presents a summary of the analysis to be performed for each variable:
 
 ```{r full table, echo=FALSE, eval=TRUE}
+hembio.dt <- as.data.table(hembio[,-"ID"])
+variables <- as.character(colnames(hembio.dt))
+sum_groups <- hembio.dt[, .N, by = c("Biome", "Sex", "Age")] #NOT YET WHAT I NEED. Need to have this for each variable! CHECK https://stackoverflow.com/questions/29633168/tabulate-responses-for-multiple-columns-by-grouping-variable-with-dplyr MAYBE HELPS.
 all.var <- colnames(hembio[,c(fDataCol:ncol(hembio))])
-final.table <- data.frame(VARIABLES = all.var, NORMALITY = NA, TRANSFORMATION = NA, HOMOGENEITY = NA, TEST = NA)
+final.table <- data.frame(VARIABLES = all.var, NORMALITY = NA, TRANSFORMATION = NA, HOMOGENEITY = NA, TEST = NA, BIOME_GROUPS = NA, SEX_GROUPS = NA, AGE_GROUPS = NA)
 for (i in 1:nrow(final.table)){
   if (final.table[i,"VARIABLES"] %in% nat.normal)
           final.table[i,"NORMALITY"] <- "NORMAL" else 
@@ -188,7 +191,7 @@ for (i in 1:nrow(final.table)){
       if (final.table[i,"NORMALITY"]=="NORMAL") 
               final.table[i,"TRANSFORMATION"] <- "NA" else
               final.table[i,"TRANSFORMATION"] <- "NON-NORMAL"
-  if (!(final.table[i,"VARIABLES"] %in% homo.test)) 
+  if (!(final.table[i,"VARIABLES"] %in% homo
           final.table[i,"HOMOGENEITY"]  <- "NA" else
       if (final.table[i,"VARIABLES"] %in% non.homo) 
               final.table[i,"HOMOGENEITY"] <- "NON-HOMOGENEOUS" else 
@@ -201,7 +204,7 @@ for (i in 1:nrow(final.table)){
 ```
 
 check exactly which test will be performed, so I can built up a function using this table!
- Now I need to construct columns for "BIOME", "SEX" and "AGE", checking how many NON-NA values I have for each cathegory of these for each variable. Use data.table for the counts on the original table, extract the values to "memory" and based on that, chose between the parametric or non (using the TEST column)    
+ Now I need to construct columns for "BIOME", "SEX" and "AGE", checking how many NON-NA values I have for each cathegory of these for each variable. Use data.table for the counts on the original table, extract the values to "memory" and based on that, chose between the parametric or non (using the TEST column)  ==> use table sum_groups to start extracting info...   
 
 
 ` MAKE A FINAL TABLE HERE WITH NORMALITY AND HOMOGENEITY FOR EACH VARIABLE AND THE RESPECTIVE TESTS TO BE APPLIED AND AT WHICH VARIABLES (BIOME, SEX, AGE or just BIOME, SEX) or a column that shows KW or TEST T FOR EACH ONE AT EACH LEVEL? Think this through...`
