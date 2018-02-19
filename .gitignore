@@ -6,5 +6,5 @@
 .xlsx
 /Data
 .httr-oauth
-.*.rds
+*.rds
 /dataTapirus
