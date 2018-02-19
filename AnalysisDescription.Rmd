@@ -58,12 +58,13 @@ knitr::kable(as.data.table(hembio))
 
 This test was performed to observe if the samples have a relatively normal distribution. Each answer was stored on a table:
 ```{r shapiro-test}
+fDataCol <- 5 #First data column
 sw.test <- list()
-for (i in 5:ncol(hembio)){
+for (i in fDataCol:ncol(hembio)){
 sw.test[[i]] <- shapiro.test(hembio[,i])
 sw.test[[i]] <- sw.test[[i]]$p.value}
 
-Variables <- colnames(hembio[,5:ncol(hembio)])
+Variables <- colnames(hembio[,fDataCol:ncol(hembio)])
 sw.pvalue <- as.numeric(unlist(sw.test))
 sw.results <- data.frame(Variables, sw.pvalue)
 sw.results$Normality <- NA
@@ -84,7 +85,7 @@ Now, variables that are not normal (described as `NA` in the `Normality` column)
 
 ```{r variables transformation}
 var.transform <- as.character(sw.results$Variables[is.na(sw.results$Normality)])
-hembio.log <- cbind(hembio[,1:4],log(hembio[,var.transform]))
+hembio.log <- cbind(hembio[,c("ID","Biome","Sex","Age")],log(hembio[,var.transform]))
 ```
 
 ```{r variables transformed, echo=FALSE, eval=TRUE}
@@ -94,11 +95,11 @@ knitr::kable(as.data.table(hembio.log))
 Now we apply again the Shapiro-Wilk test on the transformed variables and see if any of them can be used:
 ```{r shapiro-test2}
 sw.test2 <- list()
-for (i in 5:ncol(hembio.log)){
+for (i in fDataCol:ncol(hembio.log)){
 sw.test2[[i]] <- shapiro.test(hembio.log[,i])
 sw.test2[[i]] <- sw.test2[[i]]$p.value}
 
-Variables <- colnames(hembio.log[,5:ncol(hembio.log)])
+Variables <- colnames(hembio.log[,fDataCol:ncol(hembio.log)])
 sw.pvalue <- as.numeric(unlist(sw.test2))
 sw.results2 <- data.frame(Variables, sw.pvalue)
 sw.results2$Normality <- NA
@@ -129,8 +130,9 @@ After the normality test, the Levene's test for homogeneity of variance across g
 ```{r homogen, echo=FALSE, eval=TRUE}
 library(car)
 normal <- c(nat.normal, normal.trans)
-hembio.homog <- cbind(hembio[,1:4],hembio[normal])
+hembio.homog <- cbind(hembio[,1:(fDataCol-1)],hembio[normal])
 knitr::kable(as.data.table(hembio.homog))
+homo.test <- colnames(hembio.homog[5:ncol(hembio.homog)])
 ```
 
 This test was performed to observe if the samples present a homogeneity of variances. Each answer was stored on a table:
@@ -144,11 +146,11 @@ source(file.path(getwd(),"R functions/Levene.R"))
   cerr.m <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Male",]
   cerr.f <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Female",]
 
-lv.pant.m <- levene.p(pant.m,5, "Age")
-lv.pant.f <- levene.p(pant.f,5, "Age")
-lv.atl <- levene.p(atl,5, "Sex") 
-lv.cerr.m <- levene.p(cerr.m,5, "Age")
-lv.cerr.f <- levene.p(cerr.f,5, "Age")
+lv.pant.m <- levene.p(pant.m,fDataCol, "Age")
+lv.pant.f <- levene.p(pant.f,fDataCol, "Age")
+lv.atl <- levene.p(atl,fDataCol, "Sex") 
+lv.cerr.m <- levene.p(cerr.m,fDataCol, "Age")
+lv.cerr.f <- levene.p(cerr.f,fDataCol, "Age")
 ```
 
 ```{r homogen final tables, echo=FALSE, eval=TRUE}
@@ -175,15 +177,31 @@ Therefore, these will be tested using `NON-PARAMETRIC` statistics, since at leas
 The following table presents a summary of the analysis to be performed for each variable:
 
 ```{r full table, echo=FALSE, eval=TRUE}
-all.var <- colnames(hembio[,c(5:ncol(hembio))])
-# NEED TO CONSTRUCT A TABLE WITH
-# ROWS: VARIABLES
-# COLS: NORMAL (YES/NO), HOMOGENOUS (YES/NO), TEST (PARAMTERIC / NON-PARAMETRIC or even better, check exactly which test will be performed, so I can built up a function using this table!)
+all.var <- colnames(hembio[,c(fDataCol:ncol(hembio))])
+final.table <- data.frame(VARIABLES = all.var, NORMALITY = NA, TRANSFORMATION = NA, HOMOGENEITY = NA, TEST = NA)
+for (i in 1:nrow(final.table)){
+  if (final.table[i,"VARIABLES"] %in% nat.normal)
+          final.table[i,"NORMALITY"] <- "NORMAL" else 
+          final.table[i,"NORMALITY"] <- "NON-NORMAL"
+  if (final.table[i,"VARIABLES"] %in% normal.trans) 
+          final.table[i,"TRANSFORMATION"] <- "NORMAL" else
+      if (final.table[i,"NORMALITY"]=="NORMAL") 
+              final.table[i,"TRANSFORMATION"] <- "NA" else
+              final.table[i,"TRANSFORMATION"] <- "NON-NORMAL"
+  if (!(final.table[i,"VARIABLES"] %in% homo.test)) 
+          final.table[i,"HOMOGENEITY"]  <- "NA" else
+      if (final.table[i,"VARIABLES"] %in% non.homo) 
+              final.table[i,"HOMOGENEITY"] <- "NON-HOMOGENEOUS" else 
+              final.table[i,"HOMOGENEITY"] <- "HOMOGENEOUS"
+  if (!(final.table[i,"TRANSFORMATION"] == "NON-NORMAL") & final.table[i,"HOMOGENEITY"] == "HOMOGENEOUS")
+              final.table[i,"TEST"] <- "PARAMETRIC" else
+              final.table[i,"TEST"] <- "NON-PARAMETRIC"
+}
 
-final.table <- data.frame(VARIABLES = all.var) #STILL NEEDS TO BE FINISHED
-
-knitr::kable()
 ```
+
+check exactly which test will be performed, so I can built up a function using this table!
+ Now I need to construct columns for "BIOME", "SEX" and "AGE", checking how many NON-NA values I have for each cathegory of these for each variable. Use data.table for the counts on the original table, extract the values to "memory" and based on that, chose between the parametric or non (using the TEST column)    
 
 
 ` MAKE A FINAL TABLE HERE WITH NORMALITY AND HOMOGENEITY FOR EACH VARIABLE AND THE RESPECTIVE TESTS TO BE APPLIED AND AT WHICH VARIABLES (BIOME, SEX, AGE or just BIOME, SEX) or a column that shows KW or TEST T FOR EACH ONE AT EACH LEVEL? Think this through...`
