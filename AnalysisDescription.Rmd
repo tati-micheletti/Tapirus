@@ -44,7 +44,7 @@ The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Mal
 
 Loading the data to work with from a `.csv` file.
 ```{r load}
-hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv")
+hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv", dtoken = token) #If it doesn't work, turn on the VPN
 #hembio <- test[ , order(names(test))] # Don't remember why this... =/
 ```
 **SIDENOTE: If the dataloading fails, turn on the VPN!.**
@@ -177,9 +177,10 @@ Therefore, these will be tested using `NON-PARAMETRIC` statistics, since at leas
 The following table presents a summary of the analysis to be performed for each variable:
 
 ```{r full table, echo=FALSE, eval=TRUE}
-hembio.dt <- as.data.table(hembio[,-"ID"])
+
+hembio.dt <- as.data.table(hembio[,!colnames(hembio)=="ID"])
 variables <- as.character(colnames(hembio.dt))
-sum_groups <- hembio.dt[, .N, by = c("Biome", "Sex", "Age")] #NOT YET WHAT I NEED. Need to have this for each variable! CHECK https://stackoverflow.com/questions/29633168/tabulate-responses-for-multiple-columns-by-grouping-variable-with-dplyr MAYBE HELPS.
+sum_groups <- hembio.dt[, .N, by = c("Biome", "Sex", "Age")] #NOT YET WHAT I NEED. Need to have this for each variable! CHECK  MAYBE HELPS.
 all.var <- colnames(hembio[,c(fDataCol:ncol(hembio))])
 final.table <- data.frame(VARIABLES = all.var, NORMALITY = NA, TRANSFORMATION = NA, HOMOGENEITY = NA, TEST = NA, BIOME_GROUPS = NA, SEX_GROUPS = NA, AGE_GROUPS = NA)
 for (i in 1:nrow(final.table)){
@@ -191,7 +192,7 @@ for (i in 1:nrow(final.table)){
       if (final.table[i,"NORMALITY"]=="NORMAL") 
               final.table[i,"TRANSFORMATION"] <- "NA" else
               final.table[i,"TRANSFORMATION"] <- "NON-NORMAL"
-  if (!(final.table[i,"VARIABLES"] %in% homo
+  if (!(final.table[i,"VARIABLES"] %in% homo.test))
           final.table[i,"HOMOGENEITY"]  <- "NA" else
       if (final.table[i,"VARIABLES"] %in% non.homo) 
               final.table[i,"HOMOGENEITY"] <- "NON-HOMOGENEOUS" else 
