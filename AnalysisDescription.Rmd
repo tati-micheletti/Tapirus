@@ -138,7 +138,6 @@ homo.test <- colnames(hembio.homog[5:ncol(hembio.homog)])
 This test was performed to observe if the samples present a homogeneity of variances. Each answer was stored on a table:
 ```{r levene}
 source(file.path(getwd(),"R functions/Levene.R"))
-# source(file.path(getwd(),"R functions/Levene2.R"))
 
   pant.m <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Male",]
   pant.f <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Female",]
@@ -174,13 +173,16 @@ non.homo <- c("Plaquetas", "LeucocitosTotais", "LactatoDesigrogenase", "Colester
 
 Therefore, these will be tested using `NON-PARAMETRIC` statistics, since at least in one group these are not homogenous.
 
-The following table presents a summary of the analysis to be performed for each variable:
+Now it is necessary to check which variables have enough samples (>2 for biome and sex, >3 for ages) to perform a comparative mean test. First, we count how many values different than `NA` we have for each variable in each group:
 
-```{r full table, echo=FALSE, eval=TRUE}
+```{r testing, echo=FALSE, eval=TRUE}
 library(dplyr)
 library(reshape2)
 hembio.dt <- as.data.table(hembio[,!colnames(hembio)=="ID"])
 binary.dt <- as.data.frame(hembio.dt)
+
+# Converting the table to binary (o/1) so I know which variables 
+# don't have enough data to compare
 for (i in 1:nrow(binary.dt)){
   for (j in 4:ncol(binary.dt)){
     if (!is.na(binary.dt[i,j]))
@@ -194,20 +196,118 @@ count.df <- binary.dt %>%
   filter(!is.na(value)) %>%  # Remove NA
   group_by(BSA, variable, value) %>%
   summarise(count=n()) %>% 
-  group_by(BSA, va0riable)
+  group_by(BSA, variable)
 count.df <- as.data.frame(count.df)
 count.df <- tidyr::separate(data = count.df, col = BSA, sep = ":", into = c("Biome","Sex","Age"))
 count.df <- as.data.table(count.df)
-two_cat <- count.df[count.df$count==1]
+#two_cat <- count.df[count.df$count==1]
+```
 
-# Still need to figure out how to make bthe table. Not sure table "final.table" as it is now (with columns such as SEX_GROUPS, BIOME_GROUPS and AGE_GROUPS) is good...
-# Need to show the tests for each one of these (BIOME, SEX, AGE). Maybe sequentially subsetting the biomes, and sex, testing each age, then ignoring age and looking only into sex, and so on?... Think about it
+```{r count.df, echo=TRUE, eval=TRUE}
+knitr::kable(count.df)
+```
+
+Now we subset this table per Biome and Sex, to observe the variables for each age and for sex:
+```{r subset, echo=FALSE, eval=TRUE}
+
+At.F <- count.df[Biome=="Atlantic"&Sex=="Female"]
+At.M <- count.df[Biome=="Atlantic"&Sex=="Male"]
+Pt.F <- count.df[Biome=="Pantanal"&Sex=="Female"]
+Pt.M <- count.df[Biome=="Pantanal"&Sex=="Male"]
+Cr.F <- count.df[Biome=="Cerrado"&Sex=="Female"]
+Cr.M <- count.df[Biome=="Cerrado"&Sex=="Male"]
+
+At <- count.df[Biome=="Atlantic"]
+Pt <- count.df[Biome=="Pantanal"]
+Cr <- count.df[Biome=="Cerrado"]
+```
+
+For each variable in the table, check if there are at least 2 Age groups to compare
+```{r compare.counts, echo=FALSE, eval=TRUE}
+# ATLANTIC FOREST
+atF.J <- At.F[Age=="Juvenile", sum(count>1)]
+atF.Sa <- At.F[Age=="Sub-adult", sum(count>1)]
+atF.Ad <- At.F[Age=="Adult", sum(count>1)] # No variables can be compared among female groups
+
+atM.J <- At.M[Age=="Juvenile", sum(count>1)]
+atM.Sa <- At.M[Age=="Sub-adult", sum(count>1)]
+atM.Ad <- At.M[Age=="Adult", sum(count>1)]
+At.M[Age=="Sub-adult"&count>1] # Which variables can be compared between Sub-adult and Adult males from Atlantic forest
+
+# PANTANAL
+ptF.J <- Pt.F[Age=="Juvenile", sum(count>1)]
+ptF.Sa <- Pt.F[Age=="Sub-adult", sum(count>1)]
+ptF.Ad <- Pt.F[Age=="Adult", sum(count>1)] # No variables can be compared among female groups
+
+ptM.J <- Pt.M[Age=="Juvenile", sum(count>1)]
+ptM.Sa <- Pt.M[Age=="Sub-adult", sum(count>1)]
+ptM.Ad <- Pt.M[Age=="Adult", sum(count>1)]
+```
+
+### Atlantic Forest
+Female groups of Atlantic Forest:
+```{r compare groups, echo=TRUE, eval=TRUE}
+atF.Ad # Atlantic Forest Adult Females
+atF.Sa # Atlantic Forest Sub-adult Females
+atF.J # Atlantic Forest Juvenile Females
+```
+** Conclusion:** No comparison can be made by age among females from Atlantic forest due to the lack of data
+
+Male groups of Atlantic Forest:
+```{r compare groups, echo=TRUE, eval=TRUE}
+atM.Ad # Atlantic Forest Adult Females
+atM.Sa # Atlantic Forest Sub-adult Females
+atM.J # Atlantic Forest Juvenile Females
+At.M[count>1&variable=="Ureia"|
+     count>1&variable=="ColesterolTotal"|
+     count>1&variable=="ProteinasTotais"]
+```
+** Conclusion:** Comparison among males from Atlantic forest can be made only for: `Ureia`, `ColesterolTotal` and `ProteinasTotais` for Adults and Sub-Adults.
+
+### Pantanal
+Female groups of Pantanal:
+```{r compare groups, echo=TRUE, eval=TRUE}
+ptF.Ad # Pantanal Adult Females
+ptF.Sa # Pantanal Sub-adult Females
+ptF.J # Pantanal Juvenile Females
+```
+** Conclusion:** Comparison among Adults and Sub-adults can be made for the following 41 variables:
+```{r var.pant.fem, echo=FALSE, eval=TRUE}
+Pt.SubA <- Pt.F[Age=="Sub-adult"]$variable
+Pt.Adu <- Pt.F[Age=="Adult"]$variable
+Pt.SubA %in% Pt.Adu #Are all variables the same between adults and sub-adults?
+knitr::kable(Pt.Adu)
+```
+
+Male groups of Pantanal:
+```{r compare groups, echo=TRUE, eval=TRUE}
+ptM.Ad # Pantanal Adult Females
+ptM.Sa # Pantanal Sub-adult Females
+ptM.J # Pantanal Juvenile Females
+```
+** Conclusion:** Comparison among males from Pantanal can be made for the following variables based on `Adults`:
+```{r compare male groups, echo=FALSE, eval=TRUE}
+Pt.MSubA <- Pt.M[Age=="Sub-adult"]$variable
+Pt.MAdu <- Pt.M[Age=="Adult"]$variable
+Pt.MJuv <- Pt.M[Age=="Juvenile"&count>1]$variable
+Pt.MSubA %in% Pt.MAdu #Are all variables the same between adults and sub-adults?
+Pt.MAdu %in% Pt.MJuv #Are all variables the same between adults and sub-adults?
+knitr::kable(data.frame(Variables=Pt.MAdu,SubAdults=(Pt.MSubA %in% Pt.MAdu),Juvenile=(Pt.MAdu %in% Pt.MJuv)))
+```
+
+### Cerrado
+
+`DO THE SAME FOR CERRADO. THEN CREATE A SPECIFIC TABLE FOR THE TESTS TO BE MADE AND FOR WHICH AGE CLASSES THESE COMPARISONS CAN BE MADE? like a column with`
+COMPARISON
+Ad x Sub-A
+Ad x Juv
+`etc.? Think of how to do this in one table for all the three levels.` 
 
 variables <- as.character(colnames(hembio.dt))
 
-
-test_groups <- data.table(PARAM = rep(c
-                                      ("PARAMETRIC", "NON-PARAMETRIC"), each = 2), GROUP = c(2,3,2,3), TEST = c("T-Test", "ANOVA", "Mann-WhitneyU","Kruskal-Wallis"))
+The following table presents a summary of the analysis to be performed for each variable:
+```{r final.table, echo=FALSE, eval=TRUE}
+test_groups <- data.table(PARAM = rep(c("PARAMETRIC", "NON-PARAMETRIC"), each = 2), GROUP = c(2,3,2,3), TEST = c("T-Test", "ANOVA", "Mann-WhitneyU","Kruskal-Wallis"))
 all.var <- colnames(hembio[,c(fDataCol:ncol(hembio))])
 final.table <- data.frame(VARIABLES = all.var, NORMALITY = NA, TRANSFORMATION = NA, HOMOGENEITY = NA, TEST = NA, BIOME_GROUPS = NA, SEX_GROUPS = NA, AGE_GROUPS = NA)
 for (i in 1:nrow(final.table)){
@@ -229,6 +329,7 @@ for (i in 1:nrow(final.table)){
               final.table[i,"TEST"] <- "NON-PARAMETRIC"
 }
 ```
+
 
 check exactly which test will be performed, so I can built up a function using this table!
  Now I need to construct columns for "BIOME", "SEX" and "AGE", checking how many NON-NA values I have for each cathegory of these for each variable. Use data.table for the counts on the original table, extract the values to "memory" and based on that, chose between the parametric or non (using the TEST column)  ==> use table sum_groups to start extracting info...   
