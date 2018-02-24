@@ -221,111 +221,93 @@ Pt <- count.df[Biome=="Pantanal"]
 Cr <- count.df[Biome=="Cerrado"]
 ```
 
-For each variable in the table, check if there are at least 2 Age groups to compare
-```{r compare.counts, echo=FALSE, eval=TRUE}
-# ATLANTIC FOREST
-atF.J <- At.F[Age=="Juvenile", sum(count>1)]
-atF.Sa <- At.F[Age=="Sub-adult", sum(count>1)]
-atF.Ad <- At.F[Age=="Adult", sum(count>1)] # No variables can be compared among female groups
-
-atM.J <- At.M[Age=="Juvenile", sum(count>1)]
-atM.Sa <- At.M[Age=="Sub-adult", sum(count>1)]
-atM.Ad <- At.M[Age=="Adult", sum(count>1)]
-
-# PANTANAL
-ptF.J <- Pt.F[Age=="Juvenile", sum(count>1)]
-ptF.Sa <- Pt.F[Age=="Sub-adult", sum(count>1)]
-ptF.Ad <- Pt.F[Age=="Adult", sum(count>1)] # No variables can be compared among female groups
-
-ptM.J <- Pt.M[Age=="Juvenile", sum(count>1)]
-ptM.Sa <- Pt.M[Age=="Sub-adult", sum(count>1)]
-ptM.Ad <- Pt.M[Age=="Adult", sum(count>1)]
-
-# CERRADO
-crF.J <- Cr.F[Age=="Juvenile", sum(count>1)]
-crF.Sa <- Cr.F[Age=="Sub-adult", sum(count>1)]
-crF.Ad <- Cr.F[Age=="Adult", sum(count>1)] # No variables can be compared among female groups
-
-crM.J <- Cr.M[Age=="Juvenile", sum(count>1)]
-crM.Sa <- Cr.M[Age=="Sub-adult", sum(count>1)]
-crM.Ad <- Cr.M[Age=="Adult", sum(count>1)]
+We create a table with all variables to check if we have enough samples from each group to run the tests:
+``` {r table.variables, echo=TRUE, eval=TRUE}
+var.excl <- c("Sex", "Biome", "Age")
+variables <- as.character(colnames(hembio.dt))
+variables <- data.table(Variables=variables[!variables %in% var.excl])
 ```
 
-#### Atlantic Forest
-Females
-```{r compare groups, echo=TRUE, eval=TRUE}
-atF.Ad # Atlantic Forest Adult Females
-atF.Sa # Atlantic Forest Sub-adult Females
-atF.J # Atlantic Forest Juvenile Females
-#** Conclusion:** No comparison can be made by age among females from Atlantic forest due to the lack of data
-```
-Males
-```{r compare groups, echo=TRUE, eval=TRUE}
-# ** Conclusion:** Comparison among males from Pantanal can be made for the following variables based on `Adults`:
-atM.Ad # Atlantic Forest Adult Females
-atM.Sa # Atlantic Forest Sub-adult Females
-atM.J # Atlantic Forest Juvenile Females
-```
-<!-- ** Conclusion:** Comparison among males from Atlantic forest can be made only for: `Ureia`, `ColesterolTotal` and `ProteinasTotais` for Adults and Sub-Adults. -->
-#### Pantanal
-Females
-```{r compare groups, echo=TRUE, eval=TRUE}
-#** Conclusion:** Comparison among Adults and Sub-adults can be made for the following 41 variables:
-ptF.Ad # Pantanal Adult Females
-ptF.Sa # Pantanal Sub-adult Females
-ptF.J # Pantanal Juvenile Females
-```
-Males
-```{r compare groups, echo=TRUE, eval=TRUE}
-#** Conclusion:** Comparison among males from Pantanal can be made for the following variables based on `Adults`:
-ptM.Ad # Pantanal Adult Females
-ptM.Sa # Pantanal Sub-adult Females
-ptM.J # Pantanal Juvenile Females
-```
-
-#### Cerrado
-Females
-```{r compare groups, echo=TRUE, eval=TRUE}
-# ** Conclusion:** Comparison among Adults and Sub-adults can be made for the following 42 variables:
-crF.Ad # Cerrado Adult Females
-crF.Sa # Cerrado Sub-adult Females
-crF.J # Cerrado Juvenile Females
-```
-Males
-```{r compare groups, echo=TRUE, eval=TRUE}
-# ** Conclusion:** Comparison among males from Cerrado can be made for the following variables based on `Adults`:
-crM.Ad # Cerrado Adult Males
-crM.Sa # Cerrado Sub-adult Males
-crM.J # Cerrado Juvenile Males
-vari.table <- data.table(Variables=variables)
-```
-
-## The following tables show the variables that have at least one value for sub-adults and juveniles in comparison to adults 
+## The following tables show the number of samples per variable for all ages: 
 ### Atlantic Forest
 Female groups of Atlantic Forest:
-``` {r compFemales, echo=TRUE, eval=TRUE}
-At.SubA <- At.F[Age=="Sub-adult"]$variable
-At.Adu <- At.F[Age=="Adult"]$variable
-At.Juv <- At.F[Age=="Juvenile"]$variable
-At.Adu %in% At.SubA#Are all variables the same between adults and sub-adults?
-At.Adu %in% At.Juv #Are all variables the same between adults and sub-adults?
-At.F.Age <- data.table(Variables=At.Adu,SubAdults=(At.Adu %in% At.SubA),Juvenile=(At.Adu %in% At.Juv))
-At.F.Age <- merge(vari.table,At.F.Age, all.y=TRUE)
-knitr::kable(At.F.Age)
-At.F.Age$enoughSamples <- NA
+``` {r FemalesAtlantic}
+At.F.Age <- variables
+At.F.Age$Adults <- NA
+At.F.Age$SubAdults <- NA
+At.F.Age$Juvenile <- NA
+At.F.Age$agesComp <- NA
+for (i in 1:nrow(At.F.Age)){
+  vrb <- as.character(At.F.Age$Variables[i])
+  if (length(count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Adult"&variable==vrb]$count)>0)
+  count.ad <- count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Adult"&variable==vrb]$count else
+    count.ad <- 0
+  if (length(count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Juvenile"&variable==vrb]$count)>0)
+  count.jv <- count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Juvenile"&variable==vrb]$count else
+    count.jv <- 0
+  if (length(count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Sub-adult"&variable==vrb]$count)>0)
+  count.sa <- count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Sub-adult"&variable==vrb]$count else
+    count.sa <- 0
+At.F.Age$Adults[i] <- count.ad
+At.F.Age$Juvenile[i] <- count.jv
+At.F.Age$SubAdults[i] <- count.sa
+varsToComp <- list()
+  if (At.F.Age$no.Samples.Ad[i]>1)
+    varsToComp$Adult <- "Adult" else
+      varsToComp$Adult <- ""
+  if (At.F.Age$no.Samples.SubAd[i]>1)
+    varsToComp$Sub.adult <- "Sub-adult" else
+      varsToComp$Sub.adult <- ""
+  if (At.F.Age$no.Samples.Juv[i]>1)
+    varsToComp$Juvenile <- "Juvenile" else
+      varsToComp$Juvenile <- ""
+    At.F.Age$agesComp[i] <- paste(unlist(varsToComp), sep = ":")
+}
 
-# Need to redo these tables as it is also including Age and Sex (and not sure why acidourico starts with lower case)
+knitr::kable(At.F.Age)
+
+# STILL NOT READY. NEED TO WRITE THE agesComp with the names only if we have at least 2 of them. maybe the code:
+# At.F.Age$agesComp <- sub("^", varsToComp$..., At.F.Age$agesComp) ou algo assim ajude...
+
 
 ```
 Male groups of Atlantic Forest:
-```{r compare male groups, echo=FALSE, eval=TRUE}
-At.MSubA <- At.M[Age=="Sub-adult"]$variable
-At.MAdu <- At.M[Age=="Adult"]$variable
-At.MJuv <- At.M[Age=="Juvenile"&count>1]$variable
-At.MAdu %in% at.MSubA #Are all variables the same between adults and sub-adults?
-At.MAdu %in% at.MJuv #Are all variables the same between adults and sub-adults?
-At.M.Age <- data.table(Variables=At.MAdu,SubAdults=(At.MAdu %in% At.MSubA),Juvenile=(At.MAdu %in% At.MJuv))
-At.M.Age <- merge(vari.table,At.M.Age, all=TRUE)
+```{r Atlantic.Males, echo=FALSE, eval=TRUE}
+
+# STILL NEEDS TO BE REDONE!
+
+At.M.Age <- variables
+At.M.Age$no.Samples.Ad <- NA
+At.M.Age$no.Samples.SubAd <- NA
+At.M.Age$no.Samples.Juv <- NA
+At.M.Age$agesComp <- NA
+for (i in 1:nrow(At.M.Age)){
+  vrb <- as.character(At.M.Age$Variables[i])
+  if (length(count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Adult"&variable==vrb]$count)>0)
+  count.ad <- count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Adult"&variable==vrb]$count else
+    count.ad <- 0
+  if (length(count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Juvenile"&variable==vrb]$count)>0)
+  count.jv <- count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Juvenile"&variable==vrb]$count else
+    count.jv <- 0
+  if (length(count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Sub-adult"&variable==vrb]$count)>0)
+  count.sa <- count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Sub-adult"&variable==vrb]$count else
+    count.sa <- 0
+At.M.Age$no.Samples.Ad[i] <- count.ad
+At.M.Age$no.Samples.Juv[i] <- count.jv
+At.M.Age$no.Samples.SubAd[i] <- count.sa
+varsToComp <- list()
+  if (At.M.Age$no.Samples.Ad[i]>1)
+    varsToComp$Adult <- "Adult" else
+      varsToComp$Adult <- ""
+  if (At.M.Age$no.Samples.SubAd[i]>1)
+    varsToComp$Sub.adult <- "Sub-adult" else
+      varsToComp$Sub.adult <- ""
+  if (At.M.Age$no.Samples.Juv[i]>1)
+    varsToComp$Juvenile <- "Juvenile" else
+      varsToComp$Juvenile <- ""
+    At.M.Age$agesComp[i] <- paste(varsToComp$Adult,varsToComp$Sub.adult,varsToComp$Juvenile, sep = ":")
+}
+
 knitr::kable(At.M.Age)
 ```
 
@@ -345,7 +327,7 @@ Male groups of Pantanal:
 ```{r compare male groups, echo=FALSE, eval=TRUE}
 Pt.MSubA <- Pt.M[Age=="Sub-adult"]$variable
 Pt.MAdu <- Pt.M[Age=="Adult"]$variable
-Pt.MJuv <- Pt.M[Age=="Juvenile"&count>1]$variable
+Pt.MJuv <- Pt.M[Age=="Juvenile"]$variable
 Pt.MSubA %in% Pt.MAdu #Are all variables the same between adults and sub-adults?
 Pt.MAdu %in% Pt.MJuv #Are all variables the same between adults and sub-adults?
 Pt.M.Age <- data.table(Variables=Pt.MAdu,SubAdults=(Pt.MSubA %in% Pt.MAdu),Juvenile=(Pt.MAdu %in% Pt.MJuv))
@@ -369,7 +351,7 @@ Male groups of Cerrado:
 ```{r compare male groups, echo=FALSE, eval=TRUE}
 Cr.MSubA <- Cr.M[Age=="Sub-adult"]$variable
 Cr.MAdu <- Cr.M[Age=="Adult"]$variable
-Cr.MJuv <- Cr.M[Age=="Juvenile"&count>1]$variable
+Cr.MJuv <- Cr.M[Age=="Juvenile"]$variable
 Cr.MSubA %in% Cr.MAdu #Are all variables the same between adults and sub-adults?
 Cr.MAdu %in% Cr.MJuv #Are all variables the same between adults and sub-adults?
 Cr.M.Age <- data.table(Variables=Cr.MAdu,SubAdults=(Cr.MSubA %in% Cr.MAdu),Juvenile=(Cr.MAdu %in% Cr.MJuv))
@@ -387,7 +369,7 @@ Ad x Sub-A
 Ad x Juv
 `etc.? Think of how to do this in one table for all the three levels.` 
 
-variables <- as.character(colnames(hembio.dt))
+
 
 The following table presents a summary of the analysis to be performed for each variable:
 ```{r final.table, echo=FALSE, eval=TRUE}
