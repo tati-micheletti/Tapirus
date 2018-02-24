@@ -209,7 +209,6 @@ knitr::kable(count.df)
 
 Now we subset this table per Biome and Sex, to observe the variables for each age and for sex:
 ```{r subset, echo=FALSE, eval=TRUE}
-
 At.F <- count.df[Biome=="Atlantic"&Sex=="Female"]
 At.M <- count.df[Biome=="Atlantic"&Sex=="Male"]
 Pt.F <- count.df[Biome=="Pantanal"&Sex=="Female"]
@@ -232,7 +231,6 @@ atF.Ad <- At.F[Age=="Adult", sum(count>1)] # No variables can be compared among 
 atM.J <- At.M[Age=="Juvenile", sum(count>1)]
 atM.Sa <- At.M[Age=="Sub-adult", sum(count>1)]
 atM.Ad <- At.M[Age=="Adult", sum(count>1)]
-At.M[Age=="Sub-adult"&count>1] # Which variables can be compared between Sub-adult and Adult males from Atlantic forest
 
 # PANTANAL
 ptF.J <- Pt.F[Age=="Juvenile", sum(count>1)]
@@ -242,60 +240,146 @@ ptF.Ad <- Pt.F[Age=="Adult", sum(count>1)] # No variables can be compared among 
 ptM.J <- Pt.M[Age=="Juvenile", sum(count>1)]
 ptM.Sa <- Pt.M[Age=="Sub-adult", sum(count>1)]
 ptM.Ad <- Pt.M[Age=="Adult", sum(count>1)]
+
+# CERRADO
+crF.J <- Cr.F[Age=="Juvenile", sum(count>1)]
+crF.Sa <- Cr.F[Age=="Sub-adult", sum(count>1)]
+crF.Ad <- Cr.F[Age=="Adult", sum(count>1)] # No variables can be compared among female groups
+
+crM.J <- Cr.M[Age=="Juvenile", sum(count>1)]
+crM.Sa <- Cr.M[Age=="Sub-adult", sum(count>1)]
+crM.Ad <- Cr.M[Age=="Adult", sum(count>1)]
 ```
 
-### Atlantic Forest
-Female groups of Atlantic Forest:
+#### Atlantic Forest
+Females
 ```{r compare groups, echo=TRUE, eval=TRUE}
 atF.Ad # Atlantic Forest Adult Females
 atF.Sa # Atlantic Forest Sub-adult Females
 atF.J # Atlantic Forest Juvenile Females
+#** Conclusion:** No comparison can be made by age among females from Atlantic forest due to the lack of data
 ```
-** Conclusion:** No comparison can be made by age among females from Atlantic forest due to the lack of data
-
-Male groups of Atlantic Forest:
+Males
 ```{r compare groups, echo=TRUE, eval=TRUE}
+# ** Conclusion:** Comparison among males from Pantanal can be made for the following variables based on `Adults`:
 atM.Ad # Atlantic Forest Adult Females
 atM.Sa # Atlantic Forest Sub-adult Females
 atM.J # Atlantic Forest Juvenile Females
-At.M[count>1&variable=="Ureia"|
-     count>1&variable=="ColesterolTotal"|
-     count>1&variable=="ProteinasTotais"]
 ```
-** Conclusion:** Comparison among males from Atlantic forest can be made only for: `Ureia`, `ColesterolTotal` and `ProteinasTotais` for Adults and Sub-Adults.
-
-### Pantanal
-Female groups of Pantanal:
+<!-- ** Conclusion:** Comparison among males from Atlantic forest can be made only for: `Ureia`, `ColesterolTotal` and `ProteinasTotais` for Adults and Sub-Adults. -->
+#### Pantanal
+Females
 ```{r compare groups, echo=TRUE, eval=TRUE}
+#** Conclusion:** Comparison among Adults and Sub-adults can be made for the following 41 variables:
 ptF.Ad # Pantanal Adult Females
 ptF.Sa # Pantanal Sub-adult Females
 ptF.J # Pantanal Juvenile Females
 ```
-** Conclusion:** Comparison among Adults and Sub-adults can be made for the following 41 variables:
-```{r var.pant.fem, echo=FALSE, eval=TRUE}
-Pt.SubA <- Pt.F[Age=="Sub-adult"]$variable
-Pt.Adu <- Pt.F[Age=="Adult"]$variable
-Pt.SubA %in% Pt.Adu #Are all variables the same between adults and sub-adults?
-knitr::kable(Pt.Adu)
-```
-
-Male groups of Pantanal:
+Males
 ```{r compare groups, echo=TRUE, eval=TRUE}
+#** Conclusion:** Comparison among males from Pantanal can be made for the following variables based on `Adults`:
 ptM.Ad # Pantanal Adult Females
 ptM.Sa # Pantanal Sub-adult Females
 ptM.J # Pantanal Juvenile Females
 ```
-** Conclusion:** Comparison among males from Pantanal can be made for the following variables based on `Adults`:
+
+#### Cerrado
+Females
+```{r compare groups, echo=TRUE, eval=TRUE}
+# ** Conclusion:** Comparison among Adults and Sub-adults can be made for the following 42 variables:
+crF.Ad # Cerrado Adult Females
+crF.Sa # Cerrado Sub-adult Females
+crF.J # Cerrado Juvenile Females
+```
+Males
+```{r compare groups, echo=TRUE, eval=TRUE}
+# ** Conclusion:** Comparison among males from Cerrado can be made for the following variables based on `Adults`:
+crM.Ad # Cerrado Adult Males
+crM.Sa # Cerrado Sub-adult Males
+crM.J # Cerrado Juvenile Males
+vari.table <- data.table(Variables=variables)
+```
+
+## The following tables show the variables that have at least one value for sub-adults and juveniles in comparison to adults 
+### Atlantic Forest
+Female groups of Atlantic Forest:
+``` {r compFemales, echo=TRUE, eval=TRUE}
+At.SubA <- At.F[Age=="Sub-adult"]$variable
+At.Adu <- At.F[Age=="Adult"]$variable
+At.Juv <- At.F[Age=="Juvenile"]$variable
+At.Adu %in% At.SubA#Are all variables the same between adults and sub-adults?
+At.Adu %in% At.Juv #Are all variables the same between adults and sub-adults?
+At.F.Age <- data.table(Variables=At.Adu,SubAdults=(At.Adu %in% At.SubA),Juvenile=(At.Adu %in% At.Juv))
+At.F.Age <- merge(vari.table,At.F.Age, all.y=TRUE)
+knitr::kable(At.F.Age)
+At.F.Age$enoughSamples <- NA
+
+# Need to redo these tables as it is also including Age and Sex (and not sure why acidourico starts with lower case)
+
+```
+Male groups of Atlantic Forest:
+```{r compare male groups, echo=FALSE, eval=TRUE}
+At.MSubA <- At.M[Age=="Sub-adult"]$variable
+At.MAdu <- At.M[Age=="Adult"]$variable
+At.MJuv <- At.M[Age=="Juvenile"&count>1]$variable
+At.MAdu %in% at.MSubA #Are all variables the same between adults and sub-adults?
+At.MAdu %in% at.MJuv #Are all variables the same between adults and sub-adults?
+At.M.Age <- data.table(Variables=At.MAdu,SubAdults=(At.MAdu %in% At.MSubA),Juvenile=(At.MAdu %in% At.MJuv))
+At.M.Age <- merge(vari.table,At.M.Age, all=TRUE)
+knitr::kable(At.M.Age)
+```
+
+### Pantanal
+Female groups of Pantanal:
+```{r var.pant.fem, echo=FALSE, eval=TRUE}
+Pt.SubA <- Pt.F[Age=="Sub-adult"]$variable
+Pt.Adu <- Pt.F[Age=="Adult"]$variable
+Pt.Juv <- Pt.F[Age=="Juvenile"]$variable
+Pt.SubA %in% Pt.Adu #Are all variables the same between adults and sub-adults?
+Pt.Juv %in% Pt.Adu #Are all variables the same between adults and sub-adults?
+Pt.F.Age <- data.table(Variables=Pt.Adu,SubAdults=(Pt.SubA %in% Pt.Adu),Juvenile=(Pt.Adu %in% Pt.Juv))
+Pt.F.Age <- merge(vari.table,Pt.F.Age, all=TRUE)
+knitr::kable(Pt.F.Age)
+```
+Male groups of Pantanal:
 ```{r compare male groups, echo=FALSE, eval=TRUE}
 Pt.MSubA <- Pt.M[Age=="Sub-adult"]$variable
 Pt.MAdu <- Pt.M[Age=="Adult"]$variable
 Pt.MJuv <- Pt.M[Age=="Juvenile"&count>1]$variable
 Pt.MSubA %in% Pt.MAdu #Are all variables the same between adults and sub-adults?
 Pt.MAdu %in% Pt.MJuv #Are all variables the same between adults and sub-adults?
-knitr::kable(data.frame(Variables=Pt.MAdu,SubAdults=(Pt.MSubA %in% Pt.MAdu),Juvenile=(Pt.MAdu %in% Pt.MJuv)))
+Pt.M.Age <- data.table(Variables=Pt.MAdu,SubAdults=(Pt.MSubA %in% Pt.MAdu),Juvenile=(Pt.MAdu %in% Pt.MJuv))
+Pt.M.Age <- merge(vari.table,Pt.M.Age, all=TRUE)
+knitr::kable(Pt.M.Age)
 ```
 
 ### Cerrado
+Female groups of Cerrado:
+```{r var.pant.fem, echo=FALSE, eval=TRUE}
+Cr.SubA <- Cr.F[Age=="Sub-adult"]$variable
+Cr.Adu <- Cr.F[Age=="Adult"]$variable
+Cr.Juv <- Cr.F[Age=="Juvenile"]$variable
+Cr.SubA %in% Cr.Adu #Are all variables the same between adults and sub-adults?
+Cr.SubA %in% Cr.Juv
+Cr.F.Age <- data.table(Variables=Cr.Adu,SubAdults=(Cr.Adu %in% Cr.SubA),Juvenile=(Cr.Adu %in% Cr.Juv))
+Cr.F.Age <- merge(vari.table,Cr.F.Age, all=TRUE)
+knitr::kable(Cr.F.Age)
+```
+Male groups of Cerrado:
+```{r compare male groups, echo=FALSE, eval=TRUE}
+Cr.MSubA <- Cr.M[Age=="Sub-adult"]$variable
+Cr.MAdu <- Cr.M[Age=="Adult"]$variable
+Cr.MJuv <- Cr.M[Age=="Juvenile"&count>1]$variable
+Cr.MSubA %in% Cr.MAdu #Are all variables the same between adults and sub-adults?
+Cr.MAdu %in% Cr.MJuv #Are all variables the same between adults and sub-adults?
+Cr.M.Age <- data.table(Variables=Cr.MAdu,SubAdults=(Cr.MSubA %in% Cr.MAdu),Juvenile=(Cr.MAdu %in% Cr.MJuv))
+Cr.M.Age <- merge(vari.table,Cr.M.Age, all=TRUE)
+knitr::kable(Cr.M.Age)
+```
+
+
+HAVE TO SUBSET THE LISTS TO VARIABLES THAT HAVE 
+
 
 `DO THE SAME FOR CERRADO. THEN CREATE A SPECIFIC TABLE FOR THE TESTS TO BE MADE AND FOR WHICH AGE CLASSES THESE COMPARISONS CAN BE MADE? like a column with`
 COMPARISON
