@@ -354,7 +354,6 @@ compBIOME$whichGroups <- apply(compBIOME, 1, function(x){
 
 ########################################################################
 
-
 compAGE <- lapply(biome, function(biome){
 
   tests1 <- lapply(sex, function(sex){
@@ -444,12 +443,11 @@ For AGE:
 
 # FIX BELOW.
 
+AGE.table <- compAGE
+
 AGE.table <- lapply(biome, function(biome){
-  
-  ageTable <- lapply(sex, function(sex){
-    
-    TEST <- apply(compAGE[[biome]][[sex]], 1, function(rows){
-          
+  TEST <- lapply(sex, function(sex){
+      TEST <- apply(compAGE[[biome]][[sex]], 1, function(rows){
          TEST <- ifelse(is.na(rows["test"]), NA, #compAGE[[biome]][[sex]]$TEST <-  
                  ifelse(rows["test"]=="T",{
                    line <- which(final.table[,VARIABLES]==rows["variables"])
@@ -462,10 +460,16 @@ AGE.table <- lapply(biome, function(biome){
                    }))
           return(TEST) 
       })
-    browser()
+        return(TEST)
     })
-})
-names(compAGE)
+  names(TEST) <- sex
+      return(TEST)
+  })
+names(AGE.table) <- biome
+
+# NOW I NEED TO BIND BOTH LISTS: AGE.tables and compAGE. AGE.table needs to be a column in compAGE dataframes.
+# maybe use cbind list or some similar
+compAGE <- cbindlist
 
 
 
