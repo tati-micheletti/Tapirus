@@ -431,9 +431,41 @@ final.table <- data.table(final.table)
 knitr::kable(as.data.table(final.table))
 ```
 
-Now, for each variable I just need to merge the last table (`final.table`) with the AGE, SEX and BIOME, to be able to automatically loop through the variables and perform the comparisons. I will start from AGE, then SEX, and at last BIOME. It is important to note that significant differences in any levels will not allow for comparison on the superior levels.
+Now, for each variable I just need to merge the last table (`final.table`) with the AGE, SEX and BIOME, to be able to automatically loop through the variables and perform the comparisons. I will start from AGE, then SEX, and at last BIOME. It is important to note that significant differences in any levels will not allow for comparison on the superior levels. 
 
+For AGE:
+```{r analysis.table}
 
+# Check: 
+# final.table
+# compAGE/SEX/BIOME
+# Variables:
+# biome, sex, age
+
+# FIX BELOW.
+
+AGE.table <- lapply(biome, function(biome){
+  
+  ageTable <- lapply(sex, function(sex){
+    
+    TEST <- apply(compAGE[[biome]][[sex]], 1, function(rows){
+          
+         TEST <- ifelse(is.na(rows["test"]), NA, #compAGE[[biome]][[sex]]$TEST <-  
+                 ifelse(rows["test"]=="T",{
+                   line <- which(final.table[,VARIABLES]==rows["variables"])
+                   tst <- final.table[line,TEST]
+                         ifelse(tst=="PARAMETRIC","T-TEST","Mann-WhitneyU")
+                 },{
+                      line <- which(final.table[,VARIABLES]==rows["variables"])
+                      tst <- final.table[line,TEST]
+                         ifelse(tst=="PARAMETRIC","ANOVA","Kruskal-Wallis")
+                   }))
+          return(TEST) 
+      })
+    browser()
+    })
+})
+names(compAGE)
 
 
 
