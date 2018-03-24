@@ -441,9 +441,9 @@ For AGE:
 # Variables:
 # biome, sex, age
 
-# FIX BELOW.
+# THIS BELOW IS STILL NOT WORKING: HAVE TO CHECK WHY IT IS GIVING ME TESTS FOR COLUMNS THAT HAVE NA... 
 
-AGE.table <- compAGE
+#----------------- AGE ---------------
 
 AGE.table <- lapply(biome, function(biome){
   TEST <- lapply(sex, function(sex){
@@ -467,13 +467,49 @@ AGE.table <- lapply(biome, function(biome){
   })
 names(AGE.table) <- biome
 
-# NOW I NEED TO BIND BOTH LISTS: AGE.tables and compAGE. AGE.table needs to be a column in compAGE dataframes.
-# maybe use cbind list or some similar
-compAGE <- cbindlist
+AGE <- lapply(biome, function(biome){
+    newAGE <- lapply(sex, function(sex){
+      statTest <- cbind(compAGE[[biome]][[sex]], statTest = AGE.table[[biome]][[sex]])
+      return(statTest)
+  })
+    names(newAGE) <- sex
+    return(newAGE)
+})
+names(AGE) <- biome
+
+#----------------- SEX ---------------
 
 
+SEX.table <- lapply(biome, function(biome){
+      TEST <- apply(compSEX[[biome]], 1, function(rows){
+          TEST <- ifelse(is.na(rows["test"]), NA, #compAGE[[biome]][[sex]]$TEST <-  
+                 ifelse(rows["test"]=="T",{
+                   line <- which(final.table[,VARIABLES]==rows["variable"])
+                   tst <- final.table[line,TEST]
+                         ifelse(tst=="PARAMETRIC","T-TEST","Mann-WhitneyU")
+                 },{
+                      line <- which(final.table[,VARIABLES]==rows["variables"])
+                      tst <- final.table[line,TEST]
+                         ifelse(tst=="PARAMETRIC","ANOVA","Kruskal-Wallis")
+                   }))
+        return(TEST)
+    })
+      return(TEST)
+  })
+names(SEX.table) <- biome
+
+SEX <- lapply(biome, function(biome){
+    newSEX <- lapply(sex, function(sex){
+      statTest <- cbind(compSEX[[biome]], statTest = SEX.table[[biome]])
+      return(statTest)
+  })
+    names(newSEX) <- sex
+    return(newSEX)
+})
+names(SEX) <- biome
 
 
+```
 
 
 
