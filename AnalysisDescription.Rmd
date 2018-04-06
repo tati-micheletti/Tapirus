@@ -431,15 +431,7 @@ knitr::kable(as.data.table(final.table))
 
 Now, for each variable I just need to merge the last table (`final.table`) with the AGE, SEX and BIOME, to be able to automatically loop through the variables and perform the comparisons. I will start from AGE, then SEX, and at last BIOME. It is important to note that significant differences in any levels will not allow for comparison on the superior levels. 
 
-For AGE:
-```{r analysis.table}
-
-# Check: 
-# final.table
-# compAGE/SEX/BIOME
-# Variables:
-# biome, sex, age
-
+```{r analysis.table, echo=FALSE, eval=TRUE}
 #----------------- AGE ---------------
 
 AGE.table <- lapply(biome, function(biome){
@@ -516,6 +508,33 @@ BIOME.table <- apply(compBIOME, 1, function(rows){
 BIOME <- cbind(compBIOME, statTest = BIOME.table)
 
 ```
+
+```{r tables for stats, echo=FALSE, eval=TRUE}
+knitr::kable(as.data.table(AGE))
+knitr::kable(as.data.table(SEX))
+knitr::kable(as.data.table(BIOME))
+```
+
+As we have the final tables indicating which tests need to be performed, we built a function to perform these tests. The function is on a separate `R script` on the folder **R functions** and is automatically sourced with the code below.
+
+```{r stats, echo=FALSE, eval=TRUE}
+
+source(file.path(getwd(),"R functions/statTests.R"))
+
+# -------- AGE -------- 
+
+
+
+
+```
+
+
+
+
+
+
+
+
 
 
 
