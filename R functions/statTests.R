@@ -10,6 +10,10 @@ statTests <- function(listTests,
 
   depth <- function(this) ifelse(is.list(this), 1L + max(sapply(this, depth)), 0L)
   
+
+  # ========= FOR AGE ==========
+
+  
   if (depth(listTests)==3){
     
     ageStats <- lapply(biome, function(biome){
@@ -77,11 +81,42 @@ statTests <- function(listTests,
      })
     
      names(ageStats) <- biome
+     
+  AGE <- lapply(biome, function(biome){
+    newAGE <- lapply(sex, function(sex){
+      p.AGE <- cbind(AGE[[biome]][[sex]], p.value = ageStats[[biome]][[sex]])
+      return(p.AGE)
+    })
+    names(newAGE) <- sex
+    return(newAGE)
+  })
+  names(AGE) <- biome
 
   }
- 
-  # FROM HERE ON. Finish AGE and do the same for sex and biome
   
-  # return(AGE with the ageStats as a cbind) I have done this before, there is code ready for that.
+  # ========= FOR SEX ==========
+
+  if (depth(listTests)==2){
+  # FROM HERE ON. Need to copy from lines 18:82. Final merging code is alsready down (lines 102:106 and for biome 110.
+  # !!! REMEMBER !!! I can only compare on a superior level IF the Age was not significant for each variable/sex.
+
+  SEX <- lapply(biome, function(biome){
+    p.SEX <- cbind(SEX[[biome]], p.value = sexStats[[biome]])
+    return(p.SEX)
+  })
+  names(SEX) <- biome
+  
+  }
+  # ========= FOR BIOME ==========
+  if (depth(listTests)==1){
+    
+  BIOME <- cbind(BIOME, p.value = biomeStats)
+  
+  }
+  # ======== RETURNS
+  
+  if (exists("ageStats")) return(AGE)
+  if (exists("sexStats")) return(SEX)
+  if (exists("biomeStats")) return(BIOME)
   
 }

@@ -519,8 +519,6 @@ As we have the final tables indicating which tests need to be performed, we buil
 
 source(file.path(getwd(),"R functions/statTests.R"))
 
-# -------- AGE -------- 
-
 statAGE <- statTests(listTests = AGE, 
                      testsPerVariable = final.table, 
                      originalDT = hembio, 
@@ -528,183 +526,28 @@ statAGE <- statTests(listTests = AGE,
                      biome = biome, 
                      sex = sex)
 
+# These below are still not ready. When I have all p.values, I need to make posthocs on ANOVAS and K-Ws as a NEW data.table (maybe subset those?). This table needs to have the means so we know who is smaller than who. I need to filter the variables which p.value < 0.05 and these can't go to the sex comparison. 
 
+statSEX <- statTests(listTests = SEX, 
+                     testsPerVariable = final.table, 
+                     originalDT = hembio, 
+                     logDT = hembio.log, 
+                     biome = biome, 
+                     sex = sex)
+
+statBIOME <- statTests(listTests = BIOME, 
+                     testsPerVariable = final.table, 
+                     originalDT = hembio, 
+                     logDT = hembio.log, 
+                     biome = biome, 
+                     sex = sex)
 
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- ############## BAD CODES MAYBE STILL USEFUL ############################ -->
-
-<!-- ## The following tables show the number of samples per variable for all ages:  -->
-<!-- ### Atlantic Forest -->
-<!-- Female groups of Atlantic Forest: -->
-<!-- ``` {r FemalesAtlantic} -->
-<!-- At.F.Age <- variables -->
-<!-- At.F.Age$Adults <- NA -->
-<!-- At.F.Age$SubAdults <- NA -->
-<!-- At.F.Age$Juvenile <- NA -->
-<!-- At.F.Age$agesComp <- NA -->
-
-<!-- for (i in 1:nrow(At.F.Age)){ -->
-<!--   vrb <- as.character(At.F.Age$Variables[i]) -->
-<!--   if (length(count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Adult"&variable==vrb]$count)>0) -->
-<!--   count.ad <- count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Adult"&variable==vrb]$count else -->
-<!--     count.ad <- 0 -->
-<!--   if (length(count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Juvenile"&variable==vrb]$count)>0) -->
-<!--   count.jv <- count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Juvenile"&variable==vrb]$count else -->
-<!--     count.jv <- 0 -->
-<!--   if (length(count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Sub-adult"&variable==vrb]$count)>0) -->
-<!--   count.sa <- count.df[Biome=="Atlantic"&Sex=="Female"&Age=="Sub-adult"&variable==vrb]$count else -->
-<!--     count.sa <- 0 -->
-<!-- At.F.Age$Adults[i] <- count.ad -->
-<!-- At.F.Age$Juvenile[i] <- count.jv -->
-<!-- At.F.Age$SubAdults[i] <- count.sa -->
-<!-- varsToComp <- list() -->
-<!--   if (At.F.Age$no.Samples.Ad[i]>1) -->
-<!--     varsToComp$Adult <- "Adult" else -->
-<!--       varsToComp$Adult <- "" -->
-<!--   if (At.F.Age$no.Samples.SubAd[i]>1) -->
-<!--     varsToComp$Sub.adult <- "Sub-adult" else -->
-<!--       varsToComp$Sub.adult <- "" -->
-<!--   if (At.F.Age$no.Samples.Juv[i]>1) -->
-<!--     varsToComp$Juvenile <- "Juvenile" else -->
-<!--       varsToComp$Juvenile <- "" -->
-<!--     At.F.Age$agesComp[i] <- paste(unlist(varsToComp), sep = ":") -->
-<!-- } -->
-
-<!-- knitr::kable(At.F.Age) -->
-
-<!-- # STILL NOT READY. NEED TO WRITE THE agesComp with the names only if we have at least 2 of them. maybe the code: -->
-<!-- # At.F.Age$agesComp <- sub("^", varsToComp$..., At.F.Age$agesComp) ou algo assim ajude... -->
-
-
-<!-- ``` -->
-<!-- Male groups of Atlantic Forest: -->
-<!-- ```{r Atlantic.Males, echo=FALSE, eval=TRUE} -->
-
-<!-- # STILL NEEDS TO BE REDONE! -->
-
-<!-- At.M.Age <- variables -->
-<!-- At.M.Age$no.Samples.Ad <- NA -->
-<!-- At.M.Age$no.Samples.SubAd <- NA -->
-<!-- At.M.Age$no.Samples.Juv <- NA -->
-<!-- At.M.Age$agesComp <- NA -->
-<!-- for (i in 1:nrow(At.M.Age)){ -->
-<!--   vrb <- as.character(At.M.Age$Variables[i]) -->
-<!--   if (length(count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Adult"&variable==vrb]$count)>0) -->
-<!--   count.ad <- count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Adult"&variable==vrb]$count else -->
-<!--     count.ad <- 0 -->
-<!--   if (length(count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Juvenile"&variable==vrb]$count)>0) -->
-<!--   count.jv <- count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Juvenile"&variable==vrb]$count else -->
-<!--     count.jv <- 0 -->
-<!--   if (length(count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Sub-adult"&variable==vrb]$count)>0) -->
-<!--   count.sa <- count.df[Biome=="Atlantic"&Sex=="Male"&Age=="Sub-adult"&variable==vrb]$count else -->
-<!--     count.sa <- 0 -->
-<!-- At.M.Age$no.Samples.Ad[i] <- count.ad -->
-<!-- At.M.Age$no.Samples.Juv[i] <- count.jv -->
-<!-- At.M.Age$no.Samples.SubAd[i] <- count.sa -->
-<!-- varsToComp <- list() -->
-<!--   if (At.M.Age$no.Samples.Ad[i]>1) -->
-<!--     varsToComp$Adult <- "Adult" else -->
-<!--       varsToComp$Adult <- "" -->
-<!--   if (At.M.Age$no.Samples.SubAd[i]>1) -->
-<!--     varsToComp$Sub.adult <- "Sub-adult" else -->
-<!--       varsToComp$Sub.adult <- "" -->
-<!--   if (At.M.Age$no.Samples.Juv[i]>1) -->
-<!--     varsToComp$Juvenile <- "Juvenile" else -->
-<!--       varsToComp$Juvenile <- "" -->
-<!--     At.M.Age$agesComp[i] <- paste(varsToComp$Adult,varsToComp$Sub.adult,varsToComp$Juvenile, sep = ":") -->
-<!-- } -->
-
-<!-- knitr::kable(At.M.Age) -->
-<!-- ``` -->
-
-<!-- ### Pantanal -->
-<!-- Female groups of Pantanal: -->
-<!-- ```{r var.pant.fem, echo=FALSE, eval=TRUE} -->
-<!-- Pt.SubA <- Pt.F[Age=="Sub-adult"]$variable -->
-<!-- Pt.Adu <- Pt.F[Age=="Adult"]$variable -->
-<!-- Pt.Juv <- Pt.F[Age=="Juvenile"]$variable -->
-<!-- Pt.SubA %in% Pt.Adu #Are all variables the same between adults and sub-adults? -->
-<!-- Pt.Juv %in% Pt.Adu #Are all variables the same between adults and sub-adults? -->
-<!-- Pt.F.Age <- data.table(Variables=Pt.Adu,SubAdults=(Pt.SubA %in% Pt.Adu),Juvenile=(Pt.Adu %in% Pt.Juv)) -->
-<!-- Pt.F.Age <- merge(vari.table,Pt.F.Age, all=TRUE) -->
-<!-- knitr::kable(Pt.F.Age) -->
-<!-- ``` -->
-<!-- Male groups of Pantanal: -->
-<!-- ```{r compare male groups, echo=FALSE, eval=TRUE} -->
-<!-- Pt.MSubA <- Pt.M[Age=="Sub-adult"]$variable -->
-<!-- Pt.MAdu <- Pt.M[Age=="Adult"]$variable -->
-<!-- Pt.MJuv <- Pt.M[Age=="Juvenile"]$variable -->
-<!-- Pt.MSubA %in% Pt.MAdu #Are all variables the same between adults and sub-adults? -->
-<!-- Pt.MAdu %in% Pt.MJuv #Are all variables the same between adults and sub-adults? -->
-<!-- Pt.M.Age <- data.table(Variables=Pt.MAdu,SubAdults=(Pt.MSubA %in% Pt.MAdu),Juvenile=(Pt.MAdu %in% Pt.MJuv)) -->
-<!-- Pt.M.Age <- merge(vari.table,Pt.M.Age, all=TRUE) -->
-<!-- knitr::kable(Pt.M.Age) -->
-<!-- ``` -->
-
-<!-- ### Cerrado -->
-<!-- Female groups of Cerrado: -->
-<!-- ```{r var.pant.fem, echo=FALSE, eval=TRUE} -->
-<!-- Cr.SubA <- Cr.F[Age=="Sub-adult"]$variable -->
-<!-- Cr.Adu <- Cr.F[Age=="Adult"]$variable -->
-<!-- Cr.Juv <- Cr.F[Age=="Juvenile"]$variable -->
-<!-- Cr.SubA %in% Cr.Adu #Are all variables the same between adults and sub-adults? -->
-<!-- Cr.SubA %in% Cr.Juv -->
-<!-- Cr.F.Age <- data.table(Variables=Cr.Adu,SubAdults=(Cr.Adu %in% Cr.SubA),Juvenile=(Cr.Adu %in% Cr.Juv)) -->
-<!-- Cr.F.Age <- merge(vari.table,Cr.F.Age, all=TRUE) -->
-<!-- knitr::kable(Cr.F.Age) -->
-<!-- ``` -->
-<!-- Male groups of Cerrado: -->
-<!-- ```{r compare male groups, echo=FALSE, eval=TRUE} -->
-<!-- Cr.MSubA <- Cr.M[Age=="Sub-adult"]$variable -->
-<!-- Cr.MAdu <- Cr.M[Age=="Adult"]$variable -->
-<!-- Cr.MJuv <- Cr.M[Age=="Juvenile"]$variable -->
-<!-- Cr.MSubA %in% Cr.MAdu #Are all variables the same between adults and sub-adults? -->
-<!-- Cr.MAdu %in% Cr.MJuv #Are all variables the same between adults and sub-adults? -->
-<!-- Cr.M.Age <- data.table(Variables=Cr.MAdu,SubAdults=(Cr.MSubA %in% Cr.MAdu),Juvenile=(Cr.MAdu %in% Cr.MJuv)) -->
-<!-- Cr.M.Age <- merge(vari.table,Cr.M.Age, all=TRUE) -->
-<!-- knitr::kable(Cr.M.Age) -->
-<!-- ``` -->
-
-
-<!-- HAVE TO SUBSET THE LISTS TO VARIABLES THAT HAVE  -->
-
-
-<!-- `DO THE SAME FOR CERRADO. THEN CREATE A SPECIFIC TABLE FOR THE TESTS TO BE MADE AND FOR WHICH AGE CLASSES THESE COMPARISONS CAN BE MADE? like a column with` -->
-<!-- COMPARISON -->
-<!-- Ad x Sub-A -->
-<!-- Ad x Juv -->
-<!-- `etc.? Think of how to do this in one table for all the three levels.`  -->
-
-
-
-
-
-<!-- check exactly which test will be performed, so I can built up a function using this table! -->
-<!--  Now I need to construct columns for "BIOME", "SEX" and "AGE", checking how many NON-NA values I have for each cathegory of these for each variable. Use data.table for the counts on the original table, extract the values to "memory" and based on that, chose between the parametric or non (using the TEST column)  ==> use table sum_groups to start extracting info...    -->
-
-
-<!-- ` MAKE A FINAL TABLE HERE WITH NORMALITY AND HOMOGENEITY FOR EACH VARIABLE AND THE RESPECTIVE TESTS TO BE APPLIED AND AT WHICH VARIABLES (BIOME, SEX, AGE or just BIOME, SEX) or a column that shows KW or TEST T FOR EACH ONE AT EACH LEVEL? Think this through...` -->
-
-<!-- Write NORMAL or NON-NORMAL. Do the same for Levene "HOMOGENEOUS" - "NON-HOMOG". The variables that are NORMAL & HOMOGENEOUS, use parametric, the others non parametric, group by variables in col 2:4. -->
-
+```{r tables with p.value, echo=FALSE, eval=TRUE}
+knitr::kable(as.data.table(statAGE))
+knitr::kable(as.data.table(statSEX))
+knitr::kable(as.data.table(statBIOME))
+```
 
 
