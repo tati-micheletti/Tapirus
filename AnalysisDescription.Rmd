@@ -9,7 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(data.table)
 library(rdrop2)
- drop_auth()
  token <- drop_auth()
 ```
 
@@ -504,7 +503,6 @@ BIOME.table <- apply(compBIOME, 1, function(rows){
           return(TEST)
       })
 
-
 BIOME <- cbind(compBIOME, statTest = BIOME.table)
 
 ```
@@ -523,6 +521,12 @@ source(file.path(getwd(),"R functions/statTests.R"))
 
 # -------- AGE -------- 
 
+statAGE <- statTests(listTests = AGE, 
+                     testsPerVariable = final.table, 
+                     originalDT = hembio, 
+                     logDT = hembio.log, 
+                     biome = biome, 
+                     sex = sex)
 
 
 

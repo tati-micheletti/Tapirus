@@ -1,15 +1,21 @@
-statTests <- function(listTests, testsPerVariable = final.table, originalDT = hembio, logDT = hembio.log, biome = biome, sex = sex){
-  
-  listTests <- BIOME
-  listTests <- SEX
-  listTests <- AGE
 
-   if (grepl(pattern = "AGE", x = listTests)){
+# statAGE <- statTests(listTests = AGE, testsPerVariable = final.table, originalDT = hembio, logDT = hembio.log, biome = biome, sex = sex)
+
+statTests <- function(listTests, 
+                      testsPerVariable = final.table, 
+                      originalDT = hembio, 
+                      logDT = hembio.log, 
+                      biome = biome, 
+                      sex = sex){
+
+  depth <- function(this) ifelse(is.list(this), 1L + max(sapply(this, depth)), 0L)
+  
+  if (depth(listTests)==3){
     
-     ageStats <- lapply(biome, function(biome){
+    ageStats <- lapply(biome, function(biome){
        TEST <- lapply(sex, function(sex){
          TEST <- apply(AGE[[biome]][[sex]], 1, function(rows){
-           
+
            # Extracting information for the variable to make the analysis
            line <- which(final.table[,VARIABLES]==rows["variables"])
            tst <- final.table[line,TEST]
@@ -28,64 +34,54 @@ statTests <- function(listTests, testsPerVariable = final.table, originalDT = he
                            col = whichGroups, 
                            sep = ":", 
                            into = paste0("GC", seq(1, howManyGroups)))
-           
-           # -------------- SUBSTITUTE: a for rows ------------------
-           vectorGroups <- which(a[,grepl(pattern = "GC", x = names(a))])
-           groupsTest <- names(a)[vectorGroups]
+          
+           vectorGroups <- which(rows[,grepl(pattern = "GC", x = names(rows))])
+           groupsTest <- names(rows)[vectorGroups]
            groupsToTest <- as.numeric()
            for (i in groupsTest){
-            groupsToTest[i] <- a[,i, with=FALSE]
+            groupsToTest[i] <- rows[,i, with=FALSE]
            }
            groupsToTest <- as.vector(unlist(groupsToTest))
-           ifelse(!is.na(statTest),{
-             
+           
              # If statTest is not NA, execute statistics
              # Composing the dataset
                   invisible(ifelse(nor=="NORMAL"|trans=="NON-NORMAL", 
                                    dataToUse <- data.table(cbind(AGE=originalDT$Age, originalDT[rows[,variables]])),
                                    dataToUse <- data.table(cbind(AGE=logDT$Age, logDT[rows[,variables]]))))
-             dataToUse <- dataToUse[dataToUse[,AGE %in% groupsToTest],]
-             dataToUse <- dataToUse[as.vector(!is.na(dataToUse[,2])),]
-             
-             # From here on, not working... Fix the tests...
-             
-                  testResult <- ifelse(statTest=="T-TEST", t.test(as.vector(dataToUse[,2])~as.vector(dataToUse[,1])),
-                         ifelse(statTest=="Mann-WhitneyU"))
+             dataToUse <- dataToUse[dataToUse[,AGE %in% groupsToTest],] %>%
+             .[as.vector(!is.na(.[,2])),]
 
-          },next)
+                  invisible(ifelse(is.na(statTest), testResult <- NA,
+                                   ifelse(statTest=="T-TEST",
+                                          testResult <- t.test(dataToUse[,get(rows[,variables])]~dataToUse[,AGE]),
+                                     ifelse(statTest=="Mann-WhitneyU",
+                                          testResult <- wilcox.test(dataToUse[,get(rows[,variables])]~dataToUse[,AGE]),
+                                       ifelse(statTest=="Kruskal-Wallis",
+                                          testResult <- kruskal.test(dataToUse[,get(rows[,variables])]~dataToUse[,AGE]),
+                                          testResult <- aov(dataToUse[,get(rows[,variables])]~dataToUse[,AGE]))))))
 
-
-     
-           
-           TEST <- ifelse(rows["test"]=="T",
-                          ifelse(tst=="PARAMETRIC","T-TEST","Mann-WhitneyU"),
-                          ifelse(rows["test"]=="ANOVA",
-                                 ifelse(tst=="PARAMETRIC","ANOVA","Kruskal-Wallis"),
-                                 NA))
-           return(TEST)
-         })
+      invisible(ifelse(!is.na(testResult),{
+            ifelse(!statTest=="ANOVA",
+                   p <-  testResult$p.value,
+                   p <- summary(testResult)[[1]][["Pr(>F)"]][1])
+          }, p <- NA))
+          
+           return(p)
+        })
+         
          return(TEST)
        })
+
        names(TEST) <- sex
        return(TEST)
      })
-     names(AGE.table) <- biome
+    
+     names(ageStats) <- biome
 
   }
  
-     
-    
-    # What to do:
-    # AGE has 3 lists (biome), composed of 2 lists (sex). For each DT of [[biome]][[sex]] need to reference hembio or hembio.log for data. 
-    # use apply. For each 'variables', check final.table for transformation: if NORMALITY=="NORMAL" or TRANSFORMATION=="NON-NORMAL", use hembio. If TRANSFORMATION=="NORMAL", use hembio.log. 
-    # 2. Unsplit whichGroups as a vector
-    # 3. Subset hembio or hembio.log ("dataToUse" data.table) based on [[biome]][[sex]] and whichGroups (if statTest != NA) as: Age, variables
+  # FROM HERE ON. Finish AGE and do the same for sex and biome
   
-    # For the tests
-    
-    # Identifies the depth of the lists (BIOME = 1, SEX = 2, AGE = 3) not so sure if use this, though. It doesn't have to be super flexible... Better: identify with grepl in listsTests which group that is and make 3 if statements for the function for each one of them.
-    
-    
-    depth <- function(this) ifelse(is.list(this), 1L + max(sapply(this, depth)), 0L)  
+  # return(AGE with the ageStats as a cbind) I have done this before, there is code ready for that.
   
 }
