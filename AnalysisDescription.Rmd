@@ -42,8 +42,8 @@ The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Mal
 
 Loading the data to work with from a `.csv` file.
 ```{r load}
-# hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv", dtoken = token) #If it doesn't work, turn on the VPN
-hembio <- read.csv("C:/Users/Tati/Dropbox/dataTapirus/hematobioqFull.csv") # loading from the computer
+ hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv", dtoken = token) #If it doesn't work, turn on the VPN
+# hembio <- read.csv("C:/Users/Tati/Dropbox/dataTapirus/hematobioqFull.csv") # loading from the computer
 #hembio <- test[ , order(names(test))] # Don't remember why this... =/
 ```
 **SIDE NOTE: If the dataloading fails, turn on the VPN!.**
@@ -513,7 +513,9 @@ knitr::kable(as.data.table(SEX))
 knitr::kable(as.data.table(BIOME))
 ```
 
-As we have the final tables indicating which tests need to be performed, we built a function to perform these tests. The function is on a separate `R script` on the folder **R functions** and is automatically sourced with the code below.
+As we have the final tables indicating which tests need to be performed, we built a function to perform these tests. The function is on a separate `R script` on the folder **R functions** and is automatically sourced with the code below.  
+
+*NOTE:* **It is necessary to run the code below in the given order as the first function creates a table to exclude variables that are significant for age from the sex analysis and so forth.**
 
 ```{r stats, echo=FALSE, eval=TRUE}
 
@@ -526,21 +528,23 @@ statAGE <- statTests(listTests = AGE,
                      biome = biome, 
                      sex = sex)
 
-# These below are still not ready. When I have all p.values, I need to make posthocs on ANOVAS and K-Ws as a NEW data.table (maybe subset those?). This table needs to have the means so we know who is smaller than who. I need to filter the variables which p.value < 0.05 and these can't go to the sex comparison. 
-
 statSEX <- statTests(listTests = SEX, 
                      testsPerVariable = final.table, 
                      originalDT = hembio, 
                      logDT = hembio.log, 
                      biome = biome, 
-                     sex = sex)
+                     sex = sex,
+                     exclude = outSEX.list)
+
+# Still need to finish the statTest.R script for the statBiome... Already started, but need to finish
 
 statBIOME <- statTests(listTests = BIOME, 
                      testsPerVariable = final.table, 
                      originalDT = hembio, 
                      logDT = hembio.log, 
                      biome = biome, 
-                     sex = sex)
+                     sex = sex,
+                     exclude = outBIOME.list)
 
 ```
 
@@ -550,4 +554,4 @@ knitr::kable(as.data.table(statSEX))
 knitr::kable(as.data.table(statBIOME))
 ```
 
-
+After finishing above, need to make posthoc of ANOVAS and K-W, but then it is finished. 
