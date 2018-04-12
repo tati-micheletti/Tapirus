@@ -8,7 +8,7 @@ statTests <- function(listTests,
                       biome = biome, 
                       sex = sex,
                       exclude = NA){
-
+suppressWarnings({
   depth <- function(this) ifelse(is.list(this), 1L + max(sapply(this, depth)), 0L)
   
 
@@ -104,38 +104,7 @@ statTests <- function(listTests,
   })
   names(AGE) <- biome
   
-# IF I WANT IT AS A DATA FRAME:  
-#   outSEX.DF <- lapply(biome, function(biome){
-#     TEST <- lapply(sex, function(sex){
-#             DF <- data.frame(AGE[[biome]][[sex]])
-#             sig.rows <- as.character(DF$variables[which(DF$Significancy=="Significant")])
-#        ifelse(length(sig.rows)==0,{
-#          out <- data.frame(Variables = NA, 
-#                        Biome = biome,
-#                        Sex = sex)
-#        },{
-#          out <- data.frame(Variables = sig.rows, 
-#                     Biome = rep(biome, times = length(sig.rows)),
-#                     Sex = rep(sex, times = length(sig.rows)))
-#       })
-#        return(out)
-#       })
-#     names(TEST) <- sex
-#       return(TEST)
-#     })
-#   names(outSEX.DF) <- biome
-# 
-# outSEX2.DF <- lapply(biome, function(biome){
-#   outSEX2 <- rbind(outSEX.DF[[biome]][[1]], outSEX.DF[[biome]][[2]])
-#   return(outSEX2)
-# })
-# names(outSEX2.DF) <- biome
-#   outSEX2 <- rbind(outSEX2.DF[[1]],outSEX2.DF[[2]],outSEX2.DF[[3]]) %>%
-#     na.omit()
-#   outSEX <<- outSEX2
-  
-
-# IF I WANT IT AS A VECTOR IN A LIST
+# Variables that are out for the sex analysis (those that were significant for AGE)
   outSEX.list <- lapply(biome, function(biome){
     TEST <- lapply(sex, function(sex){
       DF <- data.frame(AGE[[biome]][[sex]])
@@ -225,7 +194,7 @@ statTests <- function(listTests,
  })
  names(SEX) <- biome
 
- # IF I WANT IT AS A VECTOR IN A LIST
+ # Variables that are out for the sex analysis (those that were significant for SEX)
  outBIOME.list <- lapply(biome, function(biome){
      DF <- data.frame(SEX[[biome]])
      sig.rows <- as.character(DF$variable[which(DF$Significancy=="Significant")])
@@ -238,19 +207,64 @@ statTests <- function(listTests,
 
   # ========= FOR BIOME ==========
 
-
-  # WORK BELOW ON BIOME. ALMOST DONE!!
-  
   if (depth(listTests)==1){
     
-  BIOME <- cbind(BIOME, p.value = biomeStats)
+       biomeStats <- apply(BIOME, 1, function(rows){
+       
+        # Extracting information for the variable to make the analysis
+         groups <- strsplit(rows[["whichGroups"]], ":") %>%
+           .[[1]]
+        line <- which(final.table[,VARIABLES]==rows["variable"])
+        tst <- final.table[line,TEST]
+        trans <- final.table[line,TRANSFORMATION]
+        nor <-  final.table[line,NORMALITY]
+        
+        namesRows <- names(rows)
+        rows <- data.table(matrix(rows, nrow=1))
+        names(rows) <- namesRows
+        
+        statTest <- rows[,statTest]
+        
+        # If statTest is not NA, execute statistics
+        # Composing the dataset
+        invisible(ifelse(nor=="NORMAL"|trans=="NON-NORMAL", 
+                         dataToUse <- data.table(cbind(BIOME=originalDT$Biome, originalDT[rows[,variable]])),
+                         dataToUse <- data.table(cbind(BIOME=logDT$Biome, logDT[rows[,variable]]))))
+        dataToUse <- dataToUse[as.vector(!is.na(dataToUse[,2])),] %>%
+          .[BIOME %in% groups,]
+        
+        # subset by specific groups
+      
+        suppressMessages(invisible(ifelse(is.na(statTest), testResult <- NA,
+                         ifelse(statTest=="T-TEST",
+                                testResult <- t.test(dataToUse[,get(rows[,variable])]~dataToUse[,BIOME]),
+                                ifelse(statTest=="Mann-WhitneyU",
+                                       testResult <- wilcox.test(dataToUse[,get(rows[,variable])]~dataToUse[,BIOME]),
+                                       ifelse(statTest=="Kruskal-Wallis",
+                                              testResult <- kruskal.test(dataToUse[,get(rows[,variable])]~dataToUse[,BIOME]),
+                                              testResult <- aov(dataToUse[,get(rows[,variable])]~dataToUse[,BIOME])))))))
+        
+        invisible(ifelse(!is.na(testResult),{
+          ifelse(!statTest=="ANOVA",
+                 p <-  testResult$p.value,
+                 p <- summary(testResult)[[1]][["Pr(>F)"]][1])
+        }, p <- NA))
+        
+        return(p)
+      })
+
+ BIOME <- cbind(BIOME, p.value = biomeStats)
   
   }
   
+  # Adding 'SIGNIFICANT'
+  BIOME$Significancy <- ifelse(!is.na(BIOME$p.value)&BIOME$p.value<0.05,"Significant","")
+
   # ======== RETURNS
-  
+
   if (exists("ageStats")) return(AGE)
   if (exists("sexStats")) return(SEX)
   if (exists("biomeStats")) return(BIOME)
   
-}
+})
+  }

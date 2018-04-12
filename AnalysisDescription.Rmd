@@ -205,7 +205,7 @@ count.df <- as.data.table(count.df)
 knitr::kable(count.df)
 ```
 
-We need to have >2 for biome and sex, >3 for ages, otherwise we can't compare the means
+We need to have >2 for sex, >3 for ages and biome, otherwise we shouldn't compare the means
 ```{r}
 meanTestBiome <- apply(count.df, 1, FUN = function(x){
   meanTestBiome <- ifelse(as.numeric(x["count"])>2,"YES",NA)
@@ -292,66 +292,11 @@ tableList <- list("Atlantic" = list("Female" = list("Adult" = At.F.a,
                                                 "Juvenile" = Cr.M.j)))
 ```
 
-Check for each Age if we can compare for each variable:
+Check for each Age, Sex and Biome if we can compare for each variable:
 ``` {r lapplyoflapply}
 
-compSEX <- lapply(biome, function(biome){
-  
-  tests1 <- lapply(sex, function(sex){
-
-        listAges <- lapply(tableList[[biome]][[sex]], function(x){
-          x$Age <- NULL
-            return(x)
-        })
-        
-      listSex <- lapply(listAges, function(x){
-          nx <- x[,c("Biome","Sex","variable","count")]
-              return(nx)
-            })
-
-           
-        concListSex <- lapply(listSex, function(i) setkey(i, variable))
-        merged <- Reduce(function(...) merge(..., all = FALSE), listSex)
-        merged$countF <- apply(merged, 1, function(x){
-          sum(as.numeric(x["count.x"]), as.numeric(x["count.y"]), as.numeric(x["count"]), na.rm = TRUE)})
-        merged <- merged[,-c(2:7, 10)]
-
-return(merged)
-        
-  })
-  
-  names(tests1) <- sex
-    tests2 <- tests1
-        lapply(tests2, function(i) setkey(i, variable))
-        biomeTable <- Reduce(function(...) merge(..., all = FALSE), tests2)
-        biomeTable$test <- apply(biomeTable, 1, function(x){
-           ifelse(as.numeric(x["countF.x"])>2&as.numeric(x["countF.y"])>2,"T",NA)
-         })
-        biomeTable <- biomeTable[, c(1,8)]
-    return(biomeTable)
-})
-
-names(compSEX) <- biome
-
-#########################################################################
-
-lapply(compSEX, function(i) setkey(i, variable))
-compBIOME <-  Reduce(function(...) merge(..., all = FALSE), compSEX)
-colnames(compBIOME) <- c("variable",as.character(biome))
-compBIOME$whichGroups <- apply(compBIOME, 1, function(x){
-            whichG <- attributes(which(!is.na(x[2:length(x)])))$names %>%
-             paste(collapse = ":")
-            })
+# ~ AGE ~
           
-          compBIOME$manyGroups <- apply(compBIOME, 1, function(x){
-            subX <- x[2:4]
-            x <-  sum(!is.na(subX))
-            return(x)})
-          compBIOME$test <- ifelse(compBIOME$manyGroups<2,NA,ifelse(compBIOME$manyGroups==2,"T","ANOVA"))
-          compBIOME <- compBIOME[,-c(2:4,6)]
-
-########################################################################
-
 compAGE <- lapply(biome, function(biome){
 
   tests1 <- lapply(sex, function(sex){
@@ -378,13 +323,90 @@ compAGE <- lapply(biome, function(biome){
 })
 names(compAGE) <- biome
 
+########################################################################
+
+# ~ SEX ~
+
+compSEX <- lapply(biome, function(biome){
+   tests1 <- lapply(sex, function(sex){
+
+        listAges <- lapply(tableList[[biome]][[sex]], function(x){
+          x$Age <- NULL
+            return(x)
+        })
+        
+      listSex <- lapply(listAges, function(x){
+          nx <- x[,c("Biome","Sex","variable","count")]
+              return(nx)
+            })
+
+           
+        concListSex <- lapply(listSex, function(i) setkey(i, variable))
+        merged <- Reduce(function(...) merge(..., all = FALSE), listSex)
+        merged$countF <- apply(merged, 1, function(x){
+          sum(as.numeric(x["count.x"]), as.numeric(x["count.y"]), as.numeric(x["count"]), na.rm = TRUE)})
+        merged <- merged[,-c(2:7, 10)]
+
+return(merged)
+        
+  })
+
+  names(tests1) <- sex
+    tests2 <- tests1
+        lapply(tests2, function(i) setkey(i, variable))
+        biomeTable <- Reduce(function(...) merge(..., all = FALSE), tests2)
+        biomeTable$test <- apply(biomeTable, 1, function(x){
+           ifelse(as.numeric(x["countF.x"])>2&as.numeric(x["countF.y"])>2,"T",NA)
+         })
+
+#        biomeTable <- biomeTable[, c(1,8)]
+      return(biomeTable)
+})
+
+names(compSEX) <- biome
+
+biomeTable <- compSEX
+
+compSEX <- lapply(compSEX, function(Biomes){
+    Biomes <- Biomes[,c("variable","test")]
+      return(Biomes)
+})
+
+#########################################################################
+
+
+# ~ BIOME ~
+
+lapply(biomeTable, function(i) setkey(i, variable))
+
+compBIOME <-  Reduce(function(...) merge(..., all = FALSE), biomeTable)
+compBIOME <- compBIOME[,c(1,4,7,11,14,18,21)]
+compBIOME$Atlantic <- compBIOME[,2]+compBIOME[,3]
+compBIOME$Pantanal <- compBIOME[,4]+compBIOME[,5]
+compBIOME$Cerrado <- compBIOME[,6]+compBIOME[,7]
+compBIOME <- compBIOME[,c("variable", biome), with = FALSE]
+
+compBIOME$whichGroups <- apply(compBIOME, 1, function(x){
+  
+            whichG <- attributes(which(!is.na(x[2:length(x)])&
+                                            as.numeric(x[2:length(x)])>2))$names %>%
+             paste(collapse = ":")
+      })
+          
+          compBIOME$manyGroups <- apply(compBIOME, 1, function(x){
+            subX <- sum(!is.na(x[2:(length(x)-1)])&as.numeric(x[2:(length(x)-1)])>2)
+            return(subX)})
+          compBIOME$test <- ifelse(compBIOME$manyGroups<2,NA,ifelse(compBIOME$manyGroups==2,"T","ANOVA"))
+          compBIOME <- compBIOME[,c("variable","whichGroups","test"), with = FALSE]
 ```
 
 Here are the tests by groups: 
 
 AGE:
 ```{r table compAGE, echo=FALSE, eval=TRUE}
-knitr::kable(as.data.table(compAGE))
+lapply(compAGE, function(eachList){
+knitr::kable(as.data.table(eachList))
+})
 ```
 
 SEX:
@@ -508,7 +530,9 @@ BIOME <- cbind(compBIOME, statTest = BIOME.table)
 ```
 
 ```{r tables for stats, echo=FALSE, eval=TRUE}
-knitr::kable(as.data.table(AGE))
+lapply(AGE, function(eachList){
+knitr::kable(as.data.table(eachList))
+})
 knitr::kable(as.data.table(SEX))
 knitr::kable(as.data.table(BIOME))
 ```
@@ -536,8 +560,6 @@ statSEX <- statTests(listTests = SEX,
                      sex = sex,
                      exclude = outSEX.list)
 
-# Still need to finish the statTest.R script for the statBiome... Already started, but need to finish
-
 statBIOME <- statTests(listTests = BIOME, 
                      testsPerVariable = final.table, 
                      originalDT = hembio, 
@@ -549,9 +571,13 @@ statBIOME <- statTests(listTests = BIOME,
 ```
 
 ```{r tables with p.value, echo=FALSE, eval=TRUE}
-knitr::kable(as.data.table(statAGE))
-knitr::kable(as.data.table(statSEX))
+lapply(statAGE, function(eachList){
+knitr::kable(as.data.table(eachList))
+})
+lapply(statSEX, function(eachList){
+knitr::kable(as.data.table(eachList))
+})
 knitr::kable(as.data.table(statBIOME))
 ```
 
-After finishing above, need to make posthoc of ANOVAS and K-W, but then it is finished. 
+## Just need to make posthoc of ANOVAS and K-W. Then it is finished!!! ##
