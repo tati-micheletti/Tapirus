@@ -14,27 +14,26 @@ library(rdrop2)
 
 # Project Description
 
-The present project aimed at ...
+The present project aimed at understanding the general health of Tapir (**Tapirus terrestris**) populations on three different biomes.
 
 # Hematology and Biochemestry
 
 ## Analysis summary
 
-The following analysis were performed for the results to be comparable to the `"Health Assessment of Wild Lowland Tapirs"` *[Journal of Wildlife Disease, 2014]*.
+The following analysis were performed for the results to be comparable to the methods used in `"Health Assessment of Wild Lowland Tapirs"` *[Journal of Wildlife Disease, 2014]*.
 
 1. Shapiro-Wilk to test Normality of Samples
   + 1a. Non-normal try transform [log(e)] --> test SW again
     -  1a1. Non-normal again --> NON PARAMETRIC
   + 1b. Normal, pass to 2.
 2. Levene's test of Variance homogeneity
-  + 2a. Non-homogeneous try transform [log(e)] --> test Levene again
-    -  2a1. Non-homogeneous --> NON PARAMETRIC
+  + 2a. Non-homogeneous --> NON PARAMETRIC
   + 2b. Normal, use --> PARAMETRIC
 
 FOR NON-PARAMETRIC SAMPLES: `Kruskal-Wallis` test for more than 2 classes or `Mann-Whitney U` test for 2 classes
 FOR PARAMETRIC SAMPLES: `ANOVA` for more than 2 classes or `T-TEST` for 2 classes
 
-The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Males Juv x Pantanal Males Adults and only the variables that were *not signifficant* for each group were compared on the next level.
+The groups were hierarchically designed as: Biome > Sex > Age, i.e. Pantanal Males Juv x Pantanal Males Adults. Only the variables that were *not signifficant* for each group were compared on the next level.
 
 ## Coding
 
@@ -42,9 +41,8 @@ The groups were hierarchically designed as: Biome > Sex > Age. I.e. Pantanal Mal
 
 Loading the data to work with from a `.csv` file.
 ```{r load}
- hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv", dtoken = token) #If it doesn't work, turn on the VPN
-# hembio <- read.csv("C:/Users/Tati/Dropbox/dataTapirus/hematobioqFull.csv") # loading from the computer
-#hembio <- test[ , order(names(test))] # Don't remember why this... =/
+ hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv", dtoken = token)
+# hembio <- read.csv("C:/Users/Tati/Dropbox/dataTapirus/hematobioqFull.csv") # loading from the local computer
 ```
 **SIDE NOTE: If the dataloading fails, turn on the VPN!.**
 
@@ -238,14 +236,14 @@ completeTable <- expand.grid(variable = variables, Age = ages, Sex = sex, Biome 
   data.table()
 ```
 
-Now we match the complete table and the one with the counts:
+Now we merge the complete table and the one with the counts:
 ```{r join.tables}
 joinTable <- merge(count.df,completeTable, all = TRUE) %>%
     .[,-5]
 
 ```
 
-First: for each variable, I have to check for each age of each sex of each Biome, if we have at least 1 count.
+For each variable, I have to check for each age of each sex of each Biome, if we have at least 1 count.
 We subset this table per Biome and Sex, to observe the variables for each age and for sex:
 ```{r subset, echo=FALSE, eval=TRUE}
 At.F.a <- joinTable[Biome=="Atlantic"&Sex=="Female"&Age=="Adult"]
@@ -400,7 +398,7 @@ compBIOME$whichGroups <- apply(compBIOME, 1, function(x){
           compBIOME <- compBIOME[,c("variable","whichGroups","test"), with = FALSE]
 ```
 
-Here are the tests by groups: 
+Here are the results of the tests by factors: 
 
 AGE:
 ```{r table compAGE, echo=FALSE, eval=TRUE}
