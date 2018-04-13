@@ -172,7 +172,7 @@ Therefore, these will be tested using `NON-PARAMETRIC` statistics, since at leas
 
 Now it is necessary to check which variables have enough samples to perform a comparative mean test. First, we count how many values different than `NA` we have for each variable in each group:
 
-```{r testing, echo=FALSE, eval=TRUE}
+```{r testing, echo=TRUE, eval=TRUE, include=FALSE}
 library(dplyr)
 library(reshape2)
 hembio.dt <- as.data.table(hembio[,!colnames(hembio)=="ID"])
@@ -199,7 +199,7 @@ count.df <- tidyr::separate(data = count.df, col = BSA, sep = ":", into = c("Bio
 count.df <- as.data.table(count.df)
 ```
 
-```{r count.df, echo=TRUE, eval=TRUE}
+```{r count.df, echo=FALSE, eval=TRUE}
 knitr::kable(count.df)
 ```
 
@@ -245,7 +245,7 @@ joinTable <- merge(count.df,completeTable, all = TRUE) %>%
 
 For each variable, I have to check for each age of each sex of each Biome, if we have at least 1 count.
 We subset this table per Biome and Sex, to observe the variables for each age and for sex:
-```{r subset, echo=FALSE, eval=TRUE}
+```{r subset, echo=FALSE, eval=TRUE, include = FALSE}
 At.F.a <- joinTable[Biome=="Atlantic"&Sex=="Female"&Age=="Adult"]
 At.F.s <- joinTable[Biome=="Atlantic"&Sex=="Female"&Age=="Sub-adult"]
 At.F.j <- joinTable[Biome=="Atlantic"&Sex=="Female"&Age=="Juvenile"]
@@ -291,7 +291,7 @@ tableList <- list("Atlantic" = list("Female" = list("Adult" = At.F.a,
 ```
 
 Check for each Age, Sex and Biome if we can compare for each variable:
-``` {r lapplyoflapply}
+``` {r lapplyoflapply, echo = FALSE, eval = TRUE, include = FALSE}
 
 # ~ AGE ~
           
@@ -402,9 +402,9 @@ Here are the results of the tests by factors:
 
 AGE:
 ```{r table compAGE, echo=FALSE, eval=TRUE}
-lapply(compAGE, function(eachList){
-knitr::kable(as.data.table(eachList))
-})
+knitr::kable(as.data.table(compAGE[[1]]), caption = "Atlantic")
+knitr::kable(as.data.table(compAGE[[2]]), caption = "Pantanal")
+knitr::kable(as.data.table(compAGE[[3]]), caption = "Cerrado")
 ```
 
 SEX:
@@ -418,7 +418,7 @@ knitr::kable(as.data.table(compBIOME))
 ```
 
 The following table presents a summary of the analysis to be performed for each variable:
-```{r final.table, echo=FALSE, eval=TRUE}
+```{r final.table, echo=TRUE, eval=TRUE}
 test_groups <- data.table(PARAM = rep(c("PARAMETRIC", "NON-PARAMETRIC"), each = 2), GROUP = c(2,3,2,3), TEST = c("T-Test", "ANOVA", "Mann-WhitneyU","Kruskal-Wallis"))
 all.var <- colnames(hembio[,c(fDataCol:ncol(hembio))])
 final.table <- data.frame(VARIABLES = all.var, NORMALITY = NA, TRANSFORMATION = NA, HOMOGENEITY = NA, TEST = NA)
@@ -448,9 +448,9 @@ final.table <- data.table(final.table)
 knitr::kable(as.data.table(final.table))
 ```
 
-Now, for each variable I just need to merge the last table (`final.table`) with the AGE, SEX and BIOME, to be able to automatically loop through the variables and perform the comparisons. I will start from AGE, then SEX, and at last BIOME. It is important to note that significant differences in any levels will not allow for comparison on the superior levels. 
+Now, for each variable I just need to merge the last table (`final.table`) with the AGE, SEX and BIOME, to be able to automatically loop through the variables and perform the comparisons. I will start from AGE, then SEX, and at last BIOME. It is important to note that significant differences in any levels will not allow for comparison on the superior levels. It is also important to note that `test` only generically indicate if I have 2 or more groups to compare (by, respectively assigning `T` or `ANOVA`). The tests, after considering not only the number of groups, but also if the variable allows for a parametric test is `statTest`. 
 
-```{r analysis.table, echo=FALSE, eval=TRUE}
+```{r analysis.table, echo=FALSE, eval=TRUE, include = FALSE}
 #----------------- AGE ---------------
 
 AGE.table <- lapply(biome, function(biome){
@@ -528,16 +528,16 @@ BIOME <- cbind(compBIOME, statTest = BIOME.table)
 ```
 
 ```{r tables for stats, echo=FALSE, eval=TRUE}
-lapply(AGE, function(eachList){
-knitr::kable(as.data.table(eachList))
-})
+knitr::kable(as.data.table(AGE[[1]]), caption = "Atlantic")
+knitr::kable(as.data.table(AGE[[2]]), caption = "Pantanal")
+knitr::kable(as.data.table(AGE[[3]]), caption = "Cerrado")
 knitr::kable(as.data.table(SEX))
 knitr::kable(as.data.table(BIOME))
 ```
 
 As we have the final tables indicating which tests need to be performed, we built a function to perform these tests. The function is on a separate `R script` on the folder **R functions** and is automatically sourced with the code below.  
 
-*NOTE:* **It is necessary to run the code below in the given order as the first function creates a table to exclude variables that are significant for age from the sex analysis and so forth.**
+*NOTE: It is necessary to run the code below in the given order as the first function creates a table to exclude variables that are significant for age from the sex analysis and so forth.*
 
 ```{r stats, echo=FALSE, eval=TRUE}
 
@@ -569,13 +569,13 @@ statBIOME <- statTests(listTests = BIOME,
 ```
 
 ```{r tables with p.value, echo=FALSE, eval=TRUE}
-lapply(statAGE, function(eachList){
-knitr::kable(as.data.table(eachList))
-})
-lapply(statSEX, function(eachList){
-knitr::kable(as.data.table(eachList))
-})
-knitr::kable(as.data.table(statBIOME))
+knitr::kable(as.data.table(statAGE[[1]]), caption = "Atlantic ~ Comparison of AGES")
+knitr::kable(as.data.table(statAGE[[2]]), caption = "Pantanal ~ Comparison of AGES")
+knitr::kable(as.data.table(statAGE[[3]]), caption = "Cerrado ~ Comparison of AGES")
+knitr::kable(as.data.table(statSEX[[1]]), caption = "Atlantic ~ Comparison of SEX")
+knitr::kable(as.data.table(statSEX[[2]]), caption = "Pantanal ~ Comparison of SEX")
+knitr::kable(as.data.table(statSEX[[3]]), caption = "Cerrado ~ Comparison of SEX")
+knitr::kable(as.data.table(statBIOME), caption = "Comparison of BIOMES")
 ```
 
 At last, we just need to know for ANOVA and Kruskal-Wallis tests (tests for more than 2 groups) that returned significant differences, which specific groups are different from each others:
@@ -598,8 +598,16 @@ phBIOME <- posthocTests(statTable = statBIOME,
                          sex = sex)
 ```
 
-```{r tables with p.value, echo=FALSE, eval=TRUE}
-knitr::kable(as.data.table(phAGE))
-knitr::kable(as.data.table(phBIOME))
+It is only possible to have more than 2 groups for AGE and BIOME. **NOTE:** *The first three columns are the p.values of their respective comparisons (indicated in the ), while the last three columns are the means so it is possible to know which ones are higher and lower than the others.*
+
+AGE:
+```{r tables posthocAge, echo=FALSE, eval=TRUE}
+options(width = 150)
+phAGE
 ```
-**NOTE:** The first three columns are the p.values of their respective comparisons (indicated in the ), while the last three columns are the means so it is possible to know which ones are higher and lower than the others.
+
+BIOME:
+```{r tables posthocBIOME, echo=FALSE, eval=TRUE}
+options(width = 150)
+phBIOME
+```
