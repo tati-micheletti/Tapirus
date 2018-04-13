@@ -10,7 +10,6 @@ statTests <- function(listTests,
                       exclude = NA){
 suppressWarnings({
   depth <- function(this) ifelse(is.list(this), 1L + max(sapply(this, depth)), 0L)
-  
 
   # ========= FOR AGE ==========
 
@@ -66,6 +65,8 @@ suppressWarnings({
                                           testResult <- kruskal.test(dataToUse[,get(rows[,variables])]~dataToUse[,AGE]),
                                           testResult <- aov(dataToUse[,get(rows[,variables])]~dataToUse[,AGE]))))))
 
+                  # Make posthoc if it applies and save in global environment
+                  
       invisible(ifelse(!is.na(testResult),{
             ifelse(!statTest=="ANOVA",
                    p <-  testResult$p.value,

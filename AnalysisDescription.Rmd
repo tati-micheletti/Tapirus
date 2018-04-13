@@ -578,4 +578,28 @@ knitr::kable(as.data.table(eachList))
 knitr::kable(as.data.table(statBIOME))
 ```
 
-## Just need to make posthoc of ANOVAS and K-W. Then it is finished!!! ##
+At last, we just need to know for ANOVA and Kruskal-Wallis tests (tests for more than 2 groups) that returned significant differences, which specific groups are different from each others:
+
+```{r}
+source(file.path(getwd(),"R functions/posthocTests.R"))
+
+phAGE <- posthocTests(statTable = statAGE,
+                         testsTable = final.table,
+                         originalDT = hembio, 
+                         logDT = hembio.log, 
+                         biome = biome,
+                         sex = sex)
+
+phBIOME <- posthocTests(statTable = statBIOME,
+                         testsTable = final.table,
+                         originalDT = hembio, 
+                         logDT = hembio.log, 
+                         biome = biome,
+                         sex = sex)
+```
+
+```{r tables with p.value, echo=FALSE, eval=TRUE}
+knitr::kable(as.data.table(phAGE))
+knitr::kable(as.data.table(phBIOME))
+```
+**NOTE:** The first three columns are the p.values of their respective comparisons (indicated in the ), while the last three columns are the means so it is possible to know which ones are higher and lower than the others.
