@@ -1,0 +1,613 @@
+---
+title: 'Tapirus terrestris: Health analysis of SEX and BIOME'
+author: "Tati Micheletti"
+date: "17 April 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(rdrop2)
+library(car)
+library(dplyr)
+library(reshape2)
+ token <- drop_auth()
+```
+
+# Project Description
+
+The present project aimed at understanding the general health of Tapir (**Tapirus terrestris**) populations on three different biomes.
+
+# Hematology and Biochemestry
+
+## Analysis summary
+
+The following analysis were performed for the results to be comparable to the methods used in `"Health Assessment of Wild Lowland Tapirs"` *[Journal of Wildlife Disease, 2014]*.
+
+1. Shapiro-Wilk to test Normality of Samples
+  + 1a. Non-normal try transform [log(e)] --> test SW again
+    -  1a1. Non-normal again --> NON PARAMETRIC
+  + 1b. Normal, pass to 2.
+2. Levene's test of Variance homogeneity
+  + 2a. Non-homogeneous --> NON PARAMETRIC
+  + 2b. Normal, use --> PARAMETRIC
+
+FOR NON-PARAMETRIC SAMPLES: `Kruskal-Wallis` test for more than 2 classes or `Mann-Whitney U` test for 2 classes
+FOR PARAMETRIC SAMPLES: `ANOVA` for more than 2 classes or `T-TEST` for 2 classes
+
+The groups were hierarchically designed as: Biome > Sex, i.e. Pantanal Males x Pantanal Females. Only the variables that were *not signifficant* for each group (`sex`) were compared on the next level (`biome`) i.e. Pantanal x Cerrado x Mata Atlantica.
+
+## Coding
+
+### 1. Load Data
+
+Loading the data to work with from a `.csv` file.
+```{r load}
+ hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv", dtoken = token)
+# hembio <- read.csv("C:/Users/Tati/Dropbox/dataTapirus/hematobioqFull.csv") # loading from the local computer
+```
+**SIDE NOTE: If the dataloading fails, turn on the VPN!.**
+
+Here is the final complete table for biochemestry and hemathology (Mata Atlantica, Pantanal and Cerrado):
+```{r Table HEMBIO, eval=TRUE, echo=FALSE}
+knitr::kable(as.data.table(hembio))
+```
+
+### 2. Shapiro-Wilk test
+
+This test was performed to observe if the samples have a relatively normal distribution. Each answer was stored on a table:
+```{r shapiro-test}
+fDataCol <- 5 #First data column
+sw.test <- list()
+for (i in fDataCol:ncol(hembio)){
+sw.test[[i]] <- shapiro.test(hembio[,i])
+sw.test[[i]] <- sw.test[[i]]$p.value}
+
+Variables <- colnames(hembio[,fDataCol:ncol(hembio)])
+sw.pvalue <- as.numeric(unlist(sw.test))
+sw.results <- data.frame(Variables, sw.pvalue)
+sw.results$Normality <- NA
+sw.results <- as.data.table(sw.results)
+for (i in 1:nrow(sw.results)){
+   if (sw.results$sw.pvalue[i]>0.05){
+       sw.results$Normality[i] <- "NORMAL" }}
+```
+
+Variables that have a normal distribution are marked as `NORMAL` in the `Normality` column.
+
+```{r primary results shapiro, echo=FALSE, eval=TRUE}
+knitr::kable(sw.results)
+nat.normal <- as.character(sw.results$Variables[!is.na(sw.results$Normality)])
+```
+
+Now, variables that are not normal (described as `NA` in the `Normality` column) have to be log(e) - natural logarithm - transforemed and tested again:
+
+```{r variables transformation}
+var.transform <- as.character(sw.results$Variables[is.na(sw.results$Normality)])
+hembio.log <- cbind(hembio[,c("ID","Biome","Sex","Age")],log(hembio[,var.transform]))
+```
+
+```{r variables transformed, echo=FALSE, eval=TRUE}
+knitr::kable(as.data.table(hembio.log))
+```
+
+Now we apply again the Shapiro-Wilk test on the transformed variables and see if any of them can be used:
+```{r shapiro-test2}
+sw.test2 <- list()
+for (i in fDataCol:ncol(hembio.log)){
+sw.test2[[i]] <- shapiro.test(hembio.log[,i])
+sw.test2[[i]] <- sw.test2[[i]]$p.value}
+
+Variables <- colnames(hembio.log[,fDataCol:ncol(hembio.log)])
+sw.pvalue <- as.numeric(unlist(sw.test2))
+sw.results2 <- data.frame(Variables, sw.pvalue)
+sw.results2$Normality <- NA
+sw.results2 <- as.data.table(sw.results2)
+for (i in 1:nrow(sw.results2)){
+   if (is.finite(sw.results2$sw.pvalue[i])&sw.results2$sw.pvalue[i]>0.05){
+       sw.results2$Normality[i] <- "NORMAL" }}
+```
+
+Variables that presented a normal distribution after transformation are marked as `NORMAL` in the `Normality` column.
+
+```{r secondary results shapiro, echo=FALSE, eval=TRUE}
+knitr::kable(sw.results2)
+non.normal <- as.character(sw.results2$Variables[is.na(sw.results2$Normality)])
+normal.trans <- as.character(sw.results2$Variables[!is.na(sw.results2$Normality)])
+```
+
+List of variables that will naturally be treated as `NON-NORMAL`, and therefore will be analyzed with `NON-PARAMETRIC` tests:
+```{r non parametric, echo=FALSE, eval=TRUE}
+sw.results2$Normality[is.na(sw.results2$Normality)] <- "NON-NORMAL"
+knitr::kable(sw.results2[sw.results2$Normality=="NON-NORMAL"])
+```
+**NOTE: It is important to not that more variables will be added to this list after the homogeneity test.**  
+
+### 3. Levene's test
+
+After the normality test, the Levene's test for homogeneity of variance across groups needs to be performed on the following variables: 
+```{r homogen, echo=FALSE, eval=TRUE}
+normal <- c(nat.normal, normal.trans)
+hembio.homog <- cbind(hembio[,1:(fDataCol-1)],hembio[normal])
+knitr::kable(as.data.table(hembio.homog))
+homo.test <- colnames(hembio.homog[5:ncol(hembio.homog)])
+```
+
+This test was performed to observe if the samples present a homogeneity of variances. Each answer was stored on a table:
+```{r levene}
+source(file.path(getwd(),"R functions/Levene.R"))
+
+  pant.m <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Male",]
+  pant.f <- hembio.homog[hembio.homog$Biome=="Pantanal"&hembio.homog$Sex=="Female",]
+  atl <- hembio.homog[hembio.homog$Biome=="Atlantic",] #Can't be performed at Age level because have only one juvenile, performed at Sex level
+  cerr.m <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Male",]
+  cerr.f <- hembio.homog[hembio.homog$Biome=="Cerrado"&hembio.homog$Sex=="Female",]
+
+lv.pant.m <- levene.p(pant.m,fDataCol, "Age")
+lv.pant.f <- levene.p(pant.f,fDataCol, "Age")
+lv.atl <- levene.p(atl,fDataCol, "Sex") 
+lv.cerr.m <- levene.p(cerr.m,fDataCol, "Age")
+lv.cerr.f <- levene.p(cerr.f,fDataCol, "Age")
+```
+
+```{r homogen final tables, echo=FALSE, eval=TRUE}
+knitr::kable(lv.pant.m)
+knitr::kable(lv.pant.f)
+knitr::kable(lv.atl)
+knitr::kable(lv.cerr.m)
+knitr::kable(lv.cerr.f)
+```
+
+The following variables were not homogeneous for the following groups:
+PANTANAL: MALES: `Plaquetas`, `LeucocitosTotais` and `LactatoDesigrogenase`
+PANTANAL: FEMALES: `ColesterolFracionadoHDL` and `LactatoDesigrogenase`
+ATLANTIC: BOTH SEXES: `ColesterolFracionadoLDL`,  `ColesterolFracionadoVLDL` and `LactatoDesigrogenase`
+CERRADO: MALES: `Hemoglobina` and `Plaquetas`
+CERRADO: FEMALES: `Hemoglobina`, `Plaquetas` and `ColesterolFracionadoVLDL`
+
+```{r vector non homogenous}
+non.homo <- c("Plaquetas", "LeucocitosTotais", "LactatoDesigrogenase", "ColesterolFracionadoHDL", "ColesterolFracionadoLDL", "ColesterolFracionadoVLDL", "Hemoglobina", "Plaquetas")
+```
+
+Therefore, these will be tested using `NON-PARAMETRIC` statistics, since at least in one group these are not homogenous.
+
+Now it is necessary to check which variables have enough samples to perform a comparative mean test. First, we count how many values different than `NA` we have for each variable in each group:
+
+```{r testing, echo=TRUE, eval=TRUE, include=FALSE}
+hembio.dt <- as.data.table(hembio[,!colnames(hembio)=="ID"])
+binary.dt <- as.data.frame(hembio.dt)
+
+# Converting the table to binary (o/1) so I know which variables 
+# don't have enough data to compare
+for (i in 1:nrow(binary.dt)){
+  for (j in 4:ncol(binary.dt)){
+    if (!is.na(binary.dt[i,j]))
+        binary.dt[i,j] <- 1
+  }
+}
+binary.dt$BSA <- paste(binary.dt$Biome, binary.dt$Sex, binary.dt$Age, sep = ":")
+binary.dt <- binary.dt[,4:ncol(binary.dt)]
+count.df <- binary.dt %>% 
+  melt(id.var="BSA") %>%
+  filter(!is.na(value)) %>%  # Remove NA
+  group_by(BSA, variable, value) %>%
+  summarise(count=n()) %>% 
+  group_by(BSA, variable)
+count.df <- as.data.frame(count.df)
+count.df <- tidyr::separate(data = count.df, col = BSA, sep = ":", into = c("Biome","Sex","Age"))
+count.df <- as.data.table(count.df)
+```
+
+```{r count.df, echo=FALSE, eval=TRUE}
+knitr::kable(count.df)
+```
+
+We need to have >2 for sex, >3 for ages and biome, otherwise we shouldn't compare the means
+```{r}
+meanTestBiome <- apply(count.df, 1, FUN = function(x){
+  meanTestBiome <- ifelse(as.numeric(x["count"])>2,"YES",NA)
+  return(meanTestBiome)
+})
+
+meanTestSex <- apply(count.df, 1, FUN = function(x){
+  meanTestSex <- ifelse(as.numeric(x["count"])>2,"YES",NA)
+  return(meanTestSex)
+})
+
+meanTestAges <- apply(count.df, 1, FUN = function(x){
+  meanTestAges <- ifelse(as.numeric(x["count"])>3,"YES",NA)
+  return(meanTestAges)
+})
+
+count.df <- cbind(count.df,meanTestBiome,meanTestSex,meanTestAges)
+```
+
+For the meanTest that have `YES`, we can run either a T-Test or an ANOVA (or their comparable non-parametric).
+To identify which one will be done fore each variable/sex/age/biome, we will create a complete table with all variables, sex, biomes and ages
+```{r expanded.grid}
+var.excl <- c("Sex", "Biome", "Age")
+variables <- as.character(colnames(hembio.dt))
+variables <- c(variables[!variables %in% var.excl])
+ages <- as.character(unique(hembio.dt$Age))
+biome <- as.character(unique(hembio.dt$Biome))
+sex <- as.character(unique(hembio.dt$Sex))
+completeTable <- expand.grid(variable = variables, Age = ages, Sex = sex, Biome = biome) %>%
+  data.table()
+```
+
+Now we merge the complete table and the one with the counts:
+```{r join.tables}
+joinTable <- merge(count.df,completeTable, all = TRUE) %>%
+    .[,-5]
+
+```
+
+For each variable, I have to check for each age of each sex of each Biome, if we have at least 1 count.
+We subset this table per Biome and Sex, to observe the variables for each age and for sex:
+```{r subset, echo=FALSE, eval=TRUE, include = FALSE}
+At.F.a <- joinTable[Biome=="Atlantic"&Sex=="Female"&Age=="Adult"]
+At.F.s <- joinTable[Biome=="Atlantic"&Sex=="Female"&Age=="Sub-adult"]
+At.F.j <- joinTable[Biome=="Atlantic"&Sex=="Female"&Age=="Juvenile"]
+
+At.M.a <- joinTable[Biome=="Atlantic"&Sex=="Male"&Age=="Adult"]
+At.M.s <- joinTable[Biome=="Atlantic"&Sex=="Male"&Age=="Sub-adult"]
+At.M.j <- joinTable[Biome=="Atlantic"&Sex=="Male"&Age=="Juvenile"]
+
+Pt.F.a <- joinTable[Biome=="Pantanal"&Sex=="Female"&Age=="Adult"]
+Pt.F.s <- joinTable[Biome=="Pantanal"&Sex=="Female"&Age=="Sub-adult"]
+Pt.F.j <- joinTable[Biome=="Pantanal"&Sex=="Female"&Age=="Juvenile"]
+
+Pt.M.a <- joinTable[Biome=="Pantanal"&Sex=="Male"&Age=="Adult"]
+Pt.M.s <- joinTable[Biome=="Pantanal"&Sex=="Male"&Age=="Sub-adult"]
+Pt.M.j <- joinTable[Biome=="Pantanal"&Sex=="Male"&Age=="Juvenile"]
+
+Cr.F.a <- joinTable[Biome=="Cerrado"&Sex=="Female"&Age=="Adult"]
+Cr.F.s <- joinTable[Biome=="Cerrado"&Sex=="Female"&Age=="Sub-adult"]
+Cr.F.j <- joinTable[Biome=="Cerrado"&Sex=="Female"&Age=="Juvenile"]
+
+Cr.M.a <- joinTable[Biome=="Cerrado"&Sex=="Male"&Age=="Adult"]
+Cr.M.s <- joinTable[Biome=="Cerrado"&Sex=="Male"&Age=="Sub-adult"]
+Cr.M.j <- joinTable[Biome=="Cerrado"&Sex=="Male"&Age=="Juvenile"]
+
+tableList <- list("Atlantic" = list("Female" = list("Adult" = At.F.a,
+                                                "Sub-adult" = At.F.s,
+                                                "Juvenile" = At.F.j), 
+                                  "Male" = list("Adult" = At.M.a,
+                                                "Sub-adult" = At.M.s,
+                                                "Juvenile" = At.M.j)), 
+                  "Pantanal" = list("Female" = list("Adult" = Pt.F.a,
+                                                "Sub-adult" = Pt.F.s,
+                                                "Juvenile" = Pt.F.j), 
+                                  "Male" = list("Adult" = Pt.M.a,
+                                                "Sub-adult" = Pt.M.s,
+                                                "Juvenile" = Pt.M.j)), 
+                  "Cerrado" = list("Female" = list("Adult" = Cr.F.a,
+                                                "Sub-adult" = Cr.F.s,
+                                                "Juvenile" = Cr.F.j), 
+                                  "Male" = list("Adult" = Cr.M.a,
+                                                "Sub-adult" = Cr.M.s,
+                                                "Juvenile" = Cr.M.j)))
+```
+
+Check for each Age, Sex and Biome if we can compare for each variable:
+``` {r lapplyoflapply, echo = FALSE, eval = TRUE, include = FALSE}
+
+# ~ AGE ~
+          
+compAGE <- lapply(biome, function(biome){
+
+  tests1 <- lapply(sex, function(sex){
+    
+        listAges <- lapply(tableList[[biome]][[sex]],"[[","meanTestAges")
+          df <- do.call(cbind.data.frame,listAges)
+          df2 <- df
+          df2$whichGroups <- apply(df, 1, function(x){
+            
+            whichG <- attributes(which(!is.na(x)))$names %>%
+             paste(collapse = ":")
+            })
+          
+          df2$manyGroups <- apply(df, 1, function(x) sum(!is.na(x)))
+          df2$test <- ifelse(df2$manyGroups<2,NA,ifelse(df2$manyGroups==2,"T","ANOVA"))
+          df2 <- cbind(variables, df2) %>%
+            .[,-c(2:4,6)]
+          df2$test <- ifelse(is.na(df2$test),NA,df2$test)
+          
+          return(df2)
+  })
+    names(tests1) <- sex
+    return(tests1)
+})
+names(compAGE) <- biome
+
+########################################################################
+
+# ~ SEX ~
+
+compSEX <- lapply(biome, function(biome){
+   tests1 <- lapply(sex, function(sex){
+
+        listAges <- lapply(tableList[[biome]][[sex]], function(x){
+          x$Age <- NULL
+            return(x)
+        })
+        
+      listSex <- lapply(listAges, function(x){
+          nx <- x[,c("Biome","Sex","variable","count")]
+              return(nx)
+            })
+
+           
+        concListSex <- lapply(listSex, function(i) setkey(i, variable))
+        merged <- Reduce(function(...) merge(..., all = FALSE), listSex)
+        merged$countF <- apply(merged, 1, function(x){
+          sum(as.numeric(x["count.x"]), as.numeric(x["count.y"]), as.numeric(x["count"]), na.rm = TRUE)})
+        merged <- merged[,-c(2:7, 10)]
+
+return(merged)
+        
+  })
+
+  names(tests1) <- sex
+    tests2 <- tests1
+        lapply(tests2, function(i) setkey(i, variable))
+        biomeTable <- Reduce(function(...) merge(..., all = FALSE), tests2)
+        biomeTable$test <- apply(biomeTable, 1, function(x){
+           ifelse(as.numeric(x["countF.x"])>2&as.numeric(x["countF.y"])>2,"T",NA)
+         })
+
+#        biomeTable <- biomeTable[, c(1,8)]
+      return(biomeTable)
+})
+
+names(compSEX) <- biome
+
+biomeTable <- compSEX
+
+compSEX <- lapply(compSEX, function(Biomes){
+    Biomes <- Biomes[,c("variable","test")]
+      return(Biomes)
+})
+
+#########################################################################
+
+
+# ~ BIOME ~
+
+lapply(biomeTable, function(i) setkey(i, variable))
+
+compBIOME <-  Reduce(function(...) merge(..., all = FALSE), biomeTable)
+compBIOME <- compBIOME[,c(1,4,7,11,14,18,21)]
+compBIOME$Atlantic <- compBIOME[,2]+compBIOME[,3]
+compBIOME$Pantanal <- compBIOME[,4]+compBIOME[,5]
+compBIOME$Cerrado <- compBIOME[,6]+compBIOME[,7]
+compBIOME <- compBIOME[,c("variable", biome), with = FALSE]
+
+compBIOME$whichGroups <- apply(compBIOME, 1, function(x){
+  
+            whichG <- attributes(which(!is.na(x[2:length(x)])&
+                                            as.numeric(x[2:length(x)])>2))$names %>%
+             paste(collapse = ":")
+      })
+          
+          compBIOME$manyGroups <- apply(compBIOME, 1, function(x){
+            subX <- sum(!is.na(x[2:(length(x)-1)])&as.numeric(x[2:(length(x)-1)])>2)
+            return(subX)})
+          compBIOME$test <- ifelse(compBIOME$manyGroups<2,NA,ifelse(compBIOME$manyGroups==2,"T","ANOVA"))
+          compBIOME <- compBIOME[,c("variable","whichGroups","test"), with = FALSE]
+```
+
+Here are the results of the tests by factors: 
+
+AGE:
+```{r table compAGE, echo=FALSE, eval=TRUE}
+knitr::kable(as.data.table(compAGE[[1]]), caption = "Atlantic")
+knitr::kable(as.data.table(compAGE[[2]]), caption = "Pantanal")
+knitr::kable(as.data.table(compAGE[[3]]), caption = "Cerrado")
+```
+
+SEX:
+```{r table compSEX, echo=FALSE, eval=TRUE}
+knitr::kable(as.data.table(compSEX))
+```
+
+BIOME:
+```{r table compBIOME, echo=FALSE, eval=TRUE}
+knitr::kable(as.data.table(compBIOME))
+```
+
+The following table presents a summary of the analysis to be performed for each variable:
+```{r final.table, echo=TRUE, eval=TRUE}
+test_groups <- data.table(PARAM = rep(c("PARAMETRIC", "NON-PARAMETRIC"), each = 2), GROUP = c(2,3,2,3), TEST = c("T-Test", "ANOVA", "Mann-WhitneyU","Kruskal-Wallis"))
+all.var <- colnames(hembio[,c(fDataCol:ncol(hembio))])
+final.table <- data.frame(VARIABLES = all.var, NORMALITY = NA, TRANSFORMATION = NA, HOMOGENEITY = NA, TEST = NA)
+for (i in 1:nrow(final.table)){
+  if (final.table[i,"VARIABLES"] %in% nat.normal)
+          final.table[i,"NORMALITY"] <- "NORMAL" else 
+          final.table[i,"NORMALITY"] <- "NON-NORMAL"
+  if (final.table[i,"VARIABLES"] %in% normal.trans) 
+          final.table[i,"TRANSFORMATION"] <- "NORMAL" else
+      if (final.table[i,"NORMALITY"]=="NORMAL") 
+              final.table[i,"TRANSFORMATION"] <- "NA" else
+              final.table[i,"TRANSFORMATION"] <- "NON-NORMAL"
+  if (!(final.table[i,"VARIABLES"] %in% homo.test))
+          final.table[i,"HOMOGENEITY"]  <- "NA" else
+      if (final.table[i,"VARIABLES"] %in% non.homo) 
+              final.table[i,"HOMOGENEITY"] <- "NON-HOMOGENEOUS" else 
+              final.table[i,"HOMOGENEITY"] <- "HOMOGENEOUS"
+  if (!(final.table[i,"TRANSFORMATION"] == "NON-NORMAL") & final.table[i,"HOMOGENEITY"] == "HOMOGENEOUS")
+              final.table[i,"TEST"] <- "PARAMETRIC" else
+              final.table[i,"TEST"] <- "NON-PARAMETRIC"
+}
+
+final.table <- data.table(final.table)
+```
+
+```{r table final.table, echo=FALSE, eval=TRUE}
+knitr::kable(as.data.table(final.table))
+```
+
+Now, for each variable I just need to merge the last table (`final.table`) with the AGE, SEX and BIOME, to be able to automatically loop through the variables and perform the comparisons. I will start from AGE, then SEX, and at last BIOME. It is important to note that significant differences in any levels will not allow for comparison on the superior levels. It is also important to note that `test` only generically indicate if I have 2 or more groups to compare (by, respectively assigning `T` or `ANOVA`). The tests, after considering not only the number of groups, but also if the variable allows for a parametric test is `statTest`. 
+
+```{r analysis.table, echo=FALSE, eval=TRUE, include = FALSE}
+#----------------- AGE ---------------
+
+AGE.table <- lapply(biome, function(biome){
+  TEST <- lapply(sex, function(sex){
+      TEST <- apply(compAGE[[biome]][[sex]], 1, function(rows){
+        
+                  line <- which(final.table[,VARIABLES]==rows["variables"])
+                  tst <- final.table[line,TEST]
+                  
+              TEST <- ifelse(rows["test"]=="T",
+                        ifelse(tst=="PARAMETRIC","T-TEST","Mann-WhitneyU"),
+                          ifelse(rows["test"]=="ANOVA",
+                            ifelse(tst=="PARAMETRIC","ANOVA","Kruskal-Wallis"),
+                              NA))
+          return(TEST)
+      })
+        return(TEST)
+    })
+  names(TEST) <- sex
+      return(TEST)
+  })
+names(AGE.table) <- biome
+
+AGE <- lapply(biome, function(biome){
+    newAGE <- lapply(sex, function(sex){
+      statTest <- cbind(compAGE[[biome]][[sex]], statTest = AGE.table[[biome]][[sex]])
+      return(statTest)
+  })
+    names(newAGE) <- sex
+    return(newAGE)
+})
+names(AGE) <- biome
+
+#----------------- SEX ---------------
+
+SEX.table <- lapply(biome, function(biome){
+      TEST <- apply(compSEX[[biome]], 1, function(rows){
+
+               line <- which(final.table[,VARIABLES]==rows["variable"])
+               tst <- final.table[line,TEST]
+                  
+              TEST <- ifelse(rows["test"]=="T",
+                        ifelse(tst=="PARAMETRIC","T-TEST","Mann-WhitneyU"),
+                              NA)
+        return(TEST)
+    })
+      return(TEST)
+  })
+names(SEX.table) <- biome
+
+SEX <- lapply(biome, function(biome){
+      statTest <- cbind(compSEX[[biome]], statTest = SEX.table[[biome]])
+      return(statTest)
+  })
+
+names(SEX) <- biome
+
+#----------------- BIOME ---------------
+
+BIOME.table <- apply(compBIOME, 1, function(rows){
+
+            line <- which(final.table[,VARIABLES]==rows["variable"])
+            tst <- final.table[line,TEST]
+                  
+              TEST <- ifelse(rows["test"]=="T",
+                        ifelse(tst=="PARAMETRIC","T-TEST","Mann-WhitneyU"),
+                          ifelse(rows["test"]=="ANOVA",
+                            ifelse(tst=="PARAMETRIC","ANOVA","Kruskal-Wallis"),
+                              NA))
+          return(TEST)
+      })
+
+BIOME <- cbind(compBIOME, statTest = BIOME.table)
+
+```
+
+```{r tables for stats, echo=FALSE, eval=TRUE}
+knitr::kable(as.data.table(AGE[[1]]), caption = "Atlantic")
+knitr::kable(as.data.table(AGE[[2]]), caption = "Pantanal")
+knitr::kable(as.data.table(AGE[[3]]), caption = "Cerrado")
+knitr::kable(as.data.table(SEX))
+knitr::kable(as.data.table(BIOME))
+```
+
+As we have the final tables indicating which tests need to be performed, we built a function to perform these tests. The function is on a separate `R script` on the folder **R functions** and is automatically sourced with the code below.  
+
+*NOTE: It is necessary to run the code below in the given order as the first function creates a table to exclude variables that are significant for age from the sex analysis and so forth.*
+
+```{r stats, echo=FALSE, eval=TRUE}
+
+source(file.path(getwd(),"R functions/statTests.R"))
+
+statAGE <- statTests(listTests = AGE, 
+                     testsPerVariable = final.table, 
+                     originalDT = hembio, 
+                     logDT = hembio.log, 
+                     biome = biome, 
+                     sex = sex)
+
+statSEX <- statTests(listTests = SEX, 
+                     testsPerVariable = final.table, 
+                     originalDT = hembio, 
+                     logDT = hembio.log, 
+                     biome = biome, 
+                     sex = sex,
+                     exclude = outSEX.list)
+
+statBIOME <- statTests(listTests = BIOME, 
+                     testsPerVariable = final.table, 
+                     originalDT = hembio, 
+                     logDT = hembio.log, 
+                     biome = biome, 
+                     sex = sex,
+                     exclude = outBIOME.list)
+
+```
+
+```{r tables with p.value, echo=FALSE, eval=TRUE}
+knitr::kable(as.data.table(statAGE[[1]]), caption = "Atlantic ~ Comparison of AGES")
+knitr::kable(as.data.table(statAGE[[2]]), caption = "Pantanal ~ Comparison of AGES")
+knitr::kable(as.data.table(statAGE[[3]]), caption = "Cerrado ~ Comparison of AGES")
+knitr::kable(as.data.table(statSEX[[1]]), caption = "Atlantic ~ Comparison of SEX")
+knitr::kable(as.data.table(statSEX[[2]]), caption = "Pantanal ~ Comparison of SEX")
+knitr::kable(as.data.table(statSEX[[3]]), caption = "Cerrado ~ Comparison of SEX")
+knitr::kable(as.data.table(statBIOME), caption = "Comparison of BIOMES")
+```
+
+At last, we just need to know for ANOVA and Kruskal-Wallis tests (tests for more than 2 groups) that returned significant differences, which specific groups are different from each others:
+
+```{r}
+source(file.path(getwd(),"R functions/posthocTests.R"))
+
+phAGE <- posthocTests(statTable = statAGE,
+                         testsTable = final.table,
+                         originalDT = hembio, 
+                         logDT = hembio.log, 
+                         biome = biome,
+                         sex = sex)
+
+phBIOME <- posthocTests(statTable = statBIOME,
+                         testsTable = final.table,
+                         originalDT = hembio, 
+                         logDT = hembio.log, 
+                         biome = biome,
+                         sex = sex)
+```
+
+It is only possible to have more than 2 groups for AGE and BIOME. **NOTE:** *The first three columns are the p.values of their respective comparisons (indicated in the ), while the last three columns are the means so it is possible to know which ones are higher and lower than the others.*
+
+AGE:
+```{r tables posthocAge, echo=FALSE, eval=TRUE}
+options(width = 150)
+phAGE
+```
+
+BIOME:
+```{r tables posthocBIOME, echo=FALSE, eval=TRUE}
+options(width = 150)
+phBIOME
+```
