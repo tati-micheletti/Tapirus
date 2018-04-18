@@ -2,6 +2,7 @@
 
 levene.p <- function(dataset, firstCol, factor){
 
+  require(car)
   
   lv.test <- numeric()
   all.fac <- numeric()
