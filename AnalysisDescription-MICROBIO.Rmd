@@ -1,0 +1,202 @@
+---
+title: "Tapirus terrestris: Health analysis - MICROBIOLOGY"
+author: "Tati Micheletti"
+date: "May 15, 2018"
+output: html_document
+---
+
+Methods from Medici et al., 2014:
+For the analyses of hematologic and biochemical 
+parameters with sample sizes >40,
+the median was used as a measure of central
+tendency, and the 2.5 and 97.5 percentiles
+were used to specify the 95% reference
+interval (CSLI 2008). The central 95% provided
+an estimate of the normal range (Rhoads
+2007). For parameters with <40 samples,
+outlier cuts were applied and determined by
+the one-third rule, derived from a test
+originally proposed by Dixon (1953) and
+recommended by CLSI (2008). Recapture
+data were used only when recapture events
+took place at intervals longer than 30 days.
+
+Hematologic and biochemical variables were
+tested for normality (Shapiro-Wilk test) and
+variance homogeneity (Levene’s test), and
+compared by groups (study site.sex.age class)
+using parametric analysis of variance, when
+data were normal and homogeneous before or
+after transformation (loge). The nonparametric
+Kruskal-Wallis test was used when data were
+not normal, even after transformation; alpha
+was set to 0.05. Statistical differences between
+the anesthetic protocols could not be evaluated
+due to the unbalanced samples. Hematologic
+and biochemical results were also tested against
+tapir reference values from ISIS (Teare 2006),
+‘‘all ages all classes’’ category, through a single
+sample t-test.
+
+Values for hematology and biochemical
+parameters were expressed in SI units and
+the following data were presented for each
+parameter evaluated: valid sample size (N),
+mean, range (minimum and maximum values),
+lower quartile (Q1), median, upper quartile
+(Q3), SD, and SE. Physical examination,
+physiologic, and urinary parameters were
+tabulated and presented descriptively.
+The bacterial relative prevalence in anatomic
+cavities and lesions was analyzed for each
+study site and each cavity. The diversity of
+bacteria in each study site and the similarity
+between sites were measured by the Jaccard
+similarity coefficient (Sj; Magurran 1988,
+2004), where Sj51 would mean that both
+study sites had the same microbiologic profile,
+and Sj50 would mean that they had completely
+different microbiologic profiles (Wilson
+and Mohler 1983). Prevalence of bacterial
+strains present in both study sites was
+compared through a x2 (chi-square) test.
+To evaluate the prevalence of serologic
+responses to infectious agents, the tapir population
+in the AF was estimated to be 130
+individuals (Medici 2010). The study in the PA
+is ongoing, and population size estimates for the
+study site are preliminary (60–100 individuals;
+E.P.M. unpubl. data). The sampling prevalence
+was calculated as the proportion of tapirs with
+positive antibody responses in each study site
+(annually and for the entire study period). The
+
+95% confidence intervals (CIs) were calculated
+as a ‘‘simple random sampling,’’ according to
+sample size (small, medium, or large) and
+proportion of estimated population size (Thrusfield
+2007). When prevalence was,5%, CI was
+calculated according to Wilson (1927), as
+recommended by Thrusfield (2007). When
+prevalence was 0 or 100%, the Clopper and
+Pearson (1934) methodology was applied. Chisquare
+tests were used to compare prevalence
+data by study site.
+
+
+RESULTS:
+In the AF, 10 bacterial species were
+identified in anatomic cavities. Staphylococcus
+aureus and Escherichia coli were
+found in all anatomic cavities. In the PA,
+26 bacteria were identified; S. aureus was
+the most prevalent species in anatomic
+cavities and present in 100% of sampled
+dermal lesions. Other bacteria found in at
+least five different cavities were Acinetobacter
+sp., Gram-positive bacilli, E. coli,
+Klebsiella pneunomae, Pseudomonas aeruginosa,
+and coagulase-negative staphylococci
+(Supplementary Material Table S4).
+The calculation of similarity of bacteria
+species found in the AF and PA resulted
+in Sj50.125, which means a low similarity
+between sites. Nevertheless, when comparing
+the prevalence of the four taxa
+found in both the AF and PA (Enterobacter
+sp., E. coli, Staphylococcus sp., and S.
+aureus) there were no significant differences
+between the two tapir populations.
+
+Infectious agents
+The analyses of infectious agents allowed
+for important comparisons between
+the AF and PA tapir populations, as well as
+between sampling periods within each
+study site (annual disease prevalence;
+Supplementary Material Tables S5 and
+S6).
+Antibodies were detected for six agents:
+Bluetongue virus, eastern equine encephalitis
+(EEE) virus, western equine encephalomyelitis (WEE) virus, infectious
+bovine rhinotracheitis (IBR) virus, porcine
+parvovirus, and Leptospira interrogans (10
+serovars: Autumnalis, Bratislava, Canicola,
+Copenhageni, Grippotyphosa, Hardjo,
+Hebdomadis, Icterohaemorrhagiae, Pomona,
+and Pyrogenes).
+The serologic screening for infectious
+agents revealed a high prevalence of
+exposure to L. interrogans in both sites,
+with 25% prevalence in the AF (95% CI:
+12–38%) and 75% in the PA (95% CI:
+66.1–83.9 for minimum estimated population
+size, and 63.7–86.3% for maximum
+estimated population size). Three L.
+interrogans serovars were found in the
+AF (Autumnalis, Hebdomadis, and Pomona),
+and eight in the PA (Bratislava,
+Canicola, Copenhageni, Grippotyphosa,
+Hardjo, Icterohaemorrhagiae, Pomona,
+and Pyrogenes). Pomona was the only
+serovar found in both populations. Eleven
+samples in the PA had antibody to three
+serovars. In the AF, antibody titers for L.
+interrogans Pomona were between 100
+and 800, Autumnalis 400, and Hebdomadis
+200. In the PA, considerably higher
+antibody titers were found: Pomona 100–
+3200, Bratislava 100–800, Icterohaemorrhagiae
+100–800, Copenhageni 100–400,
+Canicola 100, Grippotyphosa 100, and
+Pyrogenes 800. Despite the high antibody
+titers, there were no clinical signs or
+laboratory results indicating disease.
+The serologic response to bluetongue
+virus antigen resulted in a prevalence of
+15.6% (95% CI: 4.7–26.5%) in the AF and
+2.8% (95% CI: 0.3–12.6%) in the PA.
+Antibody to IBR virus was observed in
+3.1% (95% CI: 0.06–15.7%) of the AF and
+2.8% (95% CI: 0.3–12.3%) of the PA.
+Antibodies to EEE and WEE viruses were
+found only in the AF population: 18.7%
+(95% CI: 7–30.4%) and 3.1% (95% CI:
+0.06–15.7%), respectively. Porcine parvovirus
+antibody was found only in the PA in
+100% of evaluated tapirs (95% CI: 90.3–
+100%).
+Significant differences in antibody
+prevalence between the study sites were
+found for L. interrogans (P50.000), EEE
+virus (P50.006), and porcine parvovirus
+(P,0.000). Nevertheless, there was no
+pattern in the distribution of positive
+results throughout the sampling period
+for most of the pathogens, except for L.
+interrogans and porcine parvovirus in the
+PA population.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
