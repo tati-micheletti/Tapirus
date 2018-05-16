@@ -1,0 +1,94 @@
+---
+title: "Tapirus terrestris: Health analysis - INFECTIOUS DISEASES"
+author: "Tati Micheletti"
+date: "16 May 2018"
+output: html_document
+---
+
+Infectious agents
+The analyses of infectious agents allowed
+for important comparisons between
+the AF and PA tapir populations, as well as
+between sampling periods within each
+study site (annual disease prevalence;
+Supplementary Material Tables S5 and
+S6).
+Antibodies were detected for six agents:
+Bluetongue virus, eastern equine encephalitis
+(EEE) virus, western equine encephalomyelitis (WEE) virus, infectious
+bovine rhinotracheitis (IBR) virus, porcine
+parvovirus, and Leptospira interrogans (10
+serovars: Autumnalis, Bratislava, Canicola,
+Copenhageni, Grippotyphosa, Hardjo,
+Hebdomadis, Icterohaemorrhagiae, Pomona,
+and Pyrogenes).
+The serologic screening for infectious
+agents revealed a high prevalence of
+exposure to L. interrogans in both sites,
+with 25% prevalence in the AF (95% CI:
+12–38%) and 75% in the PA (95% CI:
+66.1–83.9 for minimum estimated population
+size, and 63.7–86.3% for maximum
+estimated population size). Three L.
+interrogans serovars were found in the
+AF (Autumnalis, Hebdomadis, and Pomona),
+and eight in the PA (Bratislava,
+Canicola, Copenhageni, Grippotyphosa,
+Hardjo, Icterohaemorrhagiae, Pomona,
+and Pyrogenes). Pomona was the only
+serovar found in both populations. Eleven
+samples in the PA had antibody to three
+serovars. In the AF, antibody titers for L.
+interrogans Pomona were between 100
+and 800, Autumnalis 400, and Hebdomadis
+200. In the PA, considerably higher
+antibody titers were found: Pomona 100–
+3200, Bratislava 100–800, Icterohaemorrhagiae
+100–800, Copenhageni 100–400,
+Canicola 100, Grippotyphosa 100, and
+Pyrogenes 800. Despite the high antibody
+titers, there were no clinical signs or
+laboratory results indicating disease.
+The serologic response to bluetongue
+virus antigen resulted in a prevalence of
+15.6% (95% CI: 4.7–26.5%) in the AF and
+2.8% (95% CI: 0.3–12.6%) in the PA.
+Antibody to IBR virus was observed in
+3.1% (95% CI: 0.06–15.7%) of the AF and
+2.8% (95% CI: 0.3–12.3%) of the PA.
+Antibodies to EEE and WEE viruses were
+found only in the AF population: 18.7%
+(95% CI: 7–30.4%) and 3.1% (95% CI:
+0.06–15.7%), respectively. Porcine parvovirus
+antibody was found only in the PA in
+100% of evaluated tapirs (95% CI: 90.3–
+100%).
+Significant differences in antibody
+prevalence between the study sites were
+found for L. interrogans (P50.000), EEE
+virus (P50.006), and porcine parvovirus
+(P,0.000). Nevertheless, there was no
+pattern in the distribution of positive
+results throughout the sampling period
+for most of the pathogens, except for L.
+interrogans and porcine parvovirus in the
+PA population.
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
