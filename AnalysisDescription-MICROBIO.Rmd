@@ -5,37 +5,194 @@ date: "May 15, 2018"
 output: html_document
 ---
 
-Methods:
-1. Sample sizes >40, median + percentiles
-2. Sample sizes <40, outliers
-3. Compare values to ISIS
-4. Full table with all values with N, quantiles, min-max, SD, SE
-5. Prevalences --> % positives on the population
-6. Jaccard similarity coefficient for bacterias for cavities. Sj=1, same bio profile, Sj=0, different
-     [Sj = j/(a+b-j)], j = number of species of bacteria that occurred in both the tapir populations in the AF and PA study sites; a = number of species of bacteria that occurred in the PA population; b = number of species of bacteria that occurred in the AF population. AF and PA --> Sj=0.125
-7. x2 (chi-square) test for prevalence in different bacterias in study sites --> Not significant for the bacts found in both PT and MA
-
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(reproducible)
+library(rdrop2)
+library(car)
+library(dplyr)
+library(plyr)
+library(reshape2)
+library(rcompanion)
+library(betapart)
+ token <- drop_auth()
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# Project Description
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+The present project aimed at understanding the general health of Tapir (**Tapirus terrestris**) populations on three different biomes.
 
-```{r cars}
-summary(cars)
+# Microbiology
+
+## Analysis summary
+bacteria: only prevalence (X2) and Jaccard
+
+1. Prevalences --> % positives on the population. Use the positives in the total tested. (For each bacteria, positives/total ind. tested) Ex. 
+A - bac1, bac2
+B - Negative
+C - bac1
+D - bac1
+E - Negative
+
+Prevalence bac1: 3/5 = 0.6 or 60%
+Prevalence bac2: 1/5 = 0.2 or 20%
+
+2. Jaccard similarity coefficient for bacterias for cavities. Sj=1, same bio profile, Sj=0, different
+     [Sj = j/(a+b-j)], j = number of species of bacteria that occurred in both the tapir populations for each cavity in the AF, PA (and CE?) study sites; a = number of species of bacteria that occurred in the PA population; b = number of species of bacteria that occurred in the AF population. AF and PA --> Sj = 0.125
+3. x2 (chi-square) test for prevalence in different bacterias in study sites --> Not significant for the bacts found in both PT and MA
+
+## Coding
+
+### 1. Load Data
+
+Loading the data to work with from a `.csv` file.
+```{r load}
+microbioFull <- data.table::fread("C:/Users/Tati/Dropbox/dataTapirus/microbioCerradoFull.csv")
+microbioBinary <- data.table::fread("C:/Users/Tati/Dropbox/dataTapirus/microbioCerradoBinary.csv")
+microbioPTAT <- data.table::fread("C:/Users/Tati/Dropbox/dataTapirus/PTATmicrobioFull.csv")
+```
+**SIDE NOTE: If the dataloading fails, turn on the VPN!.**
+
+### 2. Prevalence calculation:
+
+OBS.: Save the table to insert in the .xlsx make it a template for next captures
+
+```{r columnsForPrevalence}
+sumNonEmpty <- data.table::data.table(cavities = names(microbioBinary)[2:ncol(microbioBinary)], 
+                                      numberSamples = apply(X = microbioBinary, MARGIN = 2, 
+                                                            FUN = function(x)
+                                                              sum(x != ""))[2:ncol(microbioBinary)])
+
+tableCerrado <- data.table::rbindlist(lapply(X = names(microbioFull)[2:ncol(microbioFull)], FUN = function(x) {
+  a <- plyr::count(microbioFull, x)
+  a["cavity"] <- names(a)[1]
+  a["biome"] <- "CERRADO"
+  names(a) <- c("species", "frequency", "cavities", "biome")
+  a <- a[!(a$species == ""),]
+  return(a)
+  })
+)
+
+tableCerrado$numberSamples <- apply(X = tableCerrado, MARGIN = 1, FUN = function(x) {
+  num <- sumNonEmpty[cavities == x["cavities"], numberSamples]
+  return(num)
+  })
+
+
+prevalenceMicrobio <- data.table::rbindlist(lapply(X = tableCerrado[, species], FUN = function(sp){
+  sb <- tableCerrado[tableCerrado[, species == sp],]
+  cavPrev <- data.table::rbindlist(lapply(X = sb[, cavities], FUN = function(cav){
+    cavTable <- sb[sb[, cavities == cav]]
+      total <- cavTable$numberSamples
+      positive <- cavTable$frequency
+  CI.calc <- stats::binom.test(x = positive, n = total, p = 0.5,
+                                   alternative="two.sided",
+                                   conf.level=0.95)
+  CI.low <- min(CI.calc$conf.int)
+  CI.up <- max(CI.calc$conf.int)
+
+  Ci <- data.table::data.table(bacteria = sp,
+                               cavity = cav,
+                               prevalence = round(CI.calc$estimate, 3)*100,
+                               CI.low = round(CI.low, 3)*100,
+                               CI.up = round(CI.up, 3)*100,
+                               CI.Interval = paste0(round(CI.low, 3)*100, " - ", round(CI.up, 3)*100))
+    return(Ci)
+  }))
+  return(cavPrev)
+})
+)
+
+tableCerrado$prevalence <- tableCerrado$frequency/tableCerrado$numberSamples*100
+finalPrevalence <- rbind(microbioPTAT, tableCerrado)
+
+prevalenceMicrobio
+
+# write.csv(x = finalPrevalence, file = "C:/Users/Tati/Dropbox/dataTapirus/prevalenceMicrobio3AUG18.csv")
+# Done already!
 ```
 
-## Including Plots
+#### 3. X2 for the prevalence per cavity (we need to exclude cavities that were not accessed in PT and MA)
+```{r X2_prevalence}
+listX2 <- lapply(X = unique(finalPrevalence$species[finalPrevalence$species != "NEGATIVE"]), FUN = function(sp){
+  assign(x = sp, value = finalPrevalence[species == sp, c("biome", "cavities", "frequency")])
+  assign(x = sp, value = data.table::dcast(get(sp), biome ~ cavities, value.var = "frequency"))
+  if (nrow(get(sp)) == 3){
+    eval(parse(text = paste0("attributes(", sp, ")[['species']] <- sp")))
+    return(get(sp))
+  }
+})
 
-You can also embed plots, for example:
+listX2 <- listX2[vapply(listX2, Negate(is.null), NA)]
+listNames <- unlist(lapply(X = listX2, FUN = function(species){
+ listName <- attributes(species)$species
+  return(listName)
+})
+)
+names(listX2) <- listNames
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+toExclude <- c("urethralSwab", "lesionSwab", "eyeSwab") # These were not collected (or compared) in the first paper, not much information
+listX2 <- lapply(X = listX2, function(x){
+  x[, !toExclude, with = FALSE]
+  })
+
+x2 <- lapply(X = listX2, FUN = function(x){
+  for (i in names(x)) x[is.na(get(i)), (i) := 0]
+  matrix <- as.matrix(x[,2:ncol(x)])
+  rownames(matrix) <- x$biome
+  #chisq.test(x = matrix, simulate.p.value = TRUE)
+  pairwiseNominalIndependence(matrix, compare = "row", fisher = TRUE,
+  gtest = FALSE, chisq = TRUE, method = "bonferroni", correct = "none",
+  digits = 3)
+})
+
+X2pVal <- rbindlist(lapply(X = names(x2), FUN = function(species){
+  x2[[species]]$species <- species
+  return(x2[[species]])
+})
+)
+X2pVal
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+In this table we can see that the p of both Fisher and X2 tests for E. coli are significant (Cerrado being different from Pantanal and MT Atlantica), but as we have to correct because of the low number of samples, they become non-significant. For `staphylococcusAureus` is not significant. 
+
+#### 4. Similarity index (IF need to chose between PT and MT, do it with Pantanal)
+
+Prepare the table for Jaccard: rows are sites, columns are species
+
+```{r Jaccard2}
+colsToKeep <- c("biome", "species")
+dissimDF <- data.table::dcast(data = finalPrevalence[, colsToKeep, with = FALSE], formula = biome ~ species) %>%
+  as.data.frame()
+biomes <- dissimDF[, 1]
+dissimDF <- dissimDF[, 3:ncol(dissimDF)]
+rownames(dissimDF) <- biomes
+dissimDF[dissimDF > 1] <- 1
+AT.PT <- dissimDF[c("ATLANTIC", "PANTANAL"),]
+CE.PT <- dissimDF[c("CERRADO", "PANTANAL"),]
+CE.AT <- dissimDF[c("ATLANTIC", "CERRADO"),]
+
+AT.PT.Sorensen <- betapart::beta.multi(x = AT.PT, index.family = "sorensen")
+AT.PT.Jaccard <- betapart::beta.multi(x = AT.PT, index.family = "jaccard")
+
+CE.PT.Sorensen <- betapart::beta.multi(x = CE.PT, index.family = "sorensen")
+CE.PT.Jaccard <- betapart::beta.multi(x = CE.PT, index.family = "jaccard")
+
+CE.AT.Sorensen <- betapart::beta.multi(x = CE.AT, index.family = "sorensen")
+CE.AT.Jaccard <- betapart::beta.multi(x = CE.AT, index.family = "jaccard")
+
+finalSimilarityTable <- data.table::data.table(
+  Comparison = c("ATLANTIC:PANTANAL", "CERRADO:PANTANAL", "CERRADO:ATLANTIC"),
+  Sorensen = c(AT.PT.Sorensen$beta.SOR, CE.PT.Sorensen$beta.SOR, CE.AT.Sorensen$beta.SOR),
+  Jaccard = c(AT.PT.Jaccard$beta.JAC, CE.PT.Jaccard$beta.JAC, CE.AT.Jaccard$beta.JAC))
+
+tdissimDF <- data.table::transpose(dissimDF)
+colnames(tdissimDF) <- rownames(dissimDF)
+rownames(tdissimDF) <- colnames(dissimDF)
+
+tdissimDF
+```
+
+CONCLUSION: Similar MMATA ATLANTICA < CERRADO < PANTANAL (OH!!! >< )

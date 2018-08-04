@@ -1,0 +1,4 @@
+  4.1. Population sizes:
+  -  ATLANTIC FOREST: 130 ind.
+  -  PANTANAL: 80 ind.
+  -  CERRADO: 1012 ind.
