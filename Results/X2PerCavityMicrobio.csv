@@ -1,0 +1,7 @@
+"","Comparison","p.Fisher","p.adj.Fisher","p.Chisq","p.adj.Chisq","species"
+"1","ATLANTIC : CERRADO",0.00617,0.0185,0.00699,0.00699,"escherichiaColi"
+"2","ATLANTIC : PANTANAL",0.181,0.543,NA,NA,"escherichiaColi"
+"3","CERRADO : PANTANAL",0.0205,0.0615,NA,NA,"escherichiaColi"
+"4","ATLANTIC : CERRADO",0.106,0.318,NA,NA,"staphylococcusAureus"
+"5","ATLANTIC : PANTANAL",0.335,1,0.332,0.664,"staphylococcusAureus"
+"6","CERRADO : PANTANAL",0.679,1,0.556,1,"staphylococcusAureus"
