@@ -1,10 +1,9 @@
 checkComparison <- function(comparisonGroup, tableList = tableList, biome = biome, sex = sex){
   # ~ SEX ~
-  browser()
 if (comparisonGroup == "SEX"){  
   compSEX <- lapply(biome, function(biome){
     tests1 <- lapply(sex, function(sex){
-      listSex <- data.table(tableList[[biome]][[sex]][,c("Biome","Sex","variable","count"), with = FALSE])
+      listSex <- data.table(tableList[[biome]][[sex]][,c("biome","sex","variable","count"), with = FALSE])
       return(listSex)
       
     })

@@ -11,7 +11,7 @@ posthocTests <- function(statTable,
     depth <- function(this) ifelse(is.list(this), 1L + max(sapply(this, depth)), 0L)
     na.omit.list <- function(y) { return(y[!sapply(y, function(x) all(is.na(x)))]) }
 
-    source(file.path(getwd(),"R functions/dunnTest.R"))
+    source(file.path(getwd(),"R_functions/dunnTest.R"))
     
                          # ========= FOR AGE ==========
     
@@ -50,8 +50,8 @@ posthocTests <- function(statTable,
             
             # Composing the dataset
             invisible(ifelse(nor=="NORMAL"|trans=="NON-NORMAL",
-                             dataToUse <- data.table(cbind(AGE=originalDT$Age, originalDT[rows[,variables]])),
-                             dataToUse <- data.table(cbind(AGE=logDT$Age, logDT[rows[,variables]]))))
+                             dataToUse <- data.table(cbind(AGE=originalDT$ageClass, originalDT[rows[,variables]])),
+                             dataToUse <- data.table(cbind(AGE=logDT$ageClass, logDT[rows[,variables]]))))
             dataToUse <- dataToUse[dataToUse[,AGE %in% groupsToTest],] %>%
               .[as.vector(!is.na(.[,2])),]
             
@@ -147,9 +147,9 @@ posthocTests <- function(statTable,
     if (depth(statTable)==1){
       
       posthocBIOME <- apply(statTable, 1, function(rows){
-
+        
         # Extracting information for the variable to make the analysis
-        line <- which(testsTable[,VARIABLES]==rows["variable"])
+        line <- which(testsTable[,VARIABLES] == rows["variable"])
         tst <- testsTable[line,TEST]
         trans <- testsTable[line,TRANSFORMATION]
         nor <-  testsTable[line,NORMALITY]
@@ -177,8 +177,8 @@ posthocTests <- function(statTable,
         
         # Composing the dataset
         invisible(ifelse(nor=="NORMAL"|trans=="NON-NORMAL",
-                         dataToUse <- data.table(cbind(BIOME=originalDT$Biome, originalDT[rows[,variable]])),
-                         dataToUse <- data.table(cbind(BIOME=logDT$Biome, logDT[rows[,variable]]))))
+                         dataToUse <- data.table(cbind(BIOME=originalDT$biome, originalDT[rows[,variable]])),
+                         dataToUse <- data.table(cbind(BIOME=logDT$biome, logDT[rows[,variable]]))))
         dataToUse <- dataToUse[dataToUse[,BIOME %in% groupsToTest],] %>%
           .[as.vector(!is.na(.[,2])),]
         
@@ -236,8 +236,8 @@ posthocTests <- function(statTable,
         
         return(invisible(phResult))
   }) # apply
-
-      names(posthocBIOME) <- variables
+      browser()
+      names(posthocBIOME) <- statTable$variable
       posthocBIOME <- na.omit.list(posthocBIOME)
       
   }

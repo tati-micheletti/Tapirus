@@ -136,7 +136,7 @@ homo.test <- colnames(hembio.homog[5:ncol(hembio.homog)])
 
 This test was performed to observe if the samples present a homogeneity of variances. Each answer was stored on a table:
 ```{r levene}
-source(file.path(getwd(),"R functions/Levene.R"))
+source(file.path(getwd(),"R_functions/Levene.R"))
 
   PT <- hembio.homog[hembio.homog$biome=="Pantanal",]
   AT <- hembio.homog[hembio.homog$biome=="Atlantic",]
@@ -154,7 +154,7 @@ knitr::kable(lv.CR)
 ```
 
 ```{r vector non homogenous}
-source(file.path(getwd(),"R functions/naOmitList.R"))
+source(file.path(getwd(),"R_functions/naOmitList.R"))
 lv.all <- list(lv.PT,lv.AT,lv.CR)
 non.homo <- suppressWarnings(lapply(lv.all, FUN = function(list){
   eachList <- apply(list, 1, FUN = function(x){
@@ -224,14 +224,14 @@ variables <- as.character(colnames(hembio.dt))
 variables <- c(variables[!variables %in% var.excl])
 biome <- as.character(unique(hembio.dt$biome))
 sex <- as.character(unique(hembio.dt$sex))
-completeTable <- expand.grid(variable = variables, Sex = sex, Biome = biome) %>%
+completeTable <- expand.grid(variable = variables, sex = sex, biome = biome) %>%
   data.table()
 ```
 
 Now we merge the complete table and the one with the counts:
 ```{r join.tables}
 
-joinTable <- merge(count.df,completeTable, all = TRUE) %>%
+joinTable <- merge(count.df, completeTable, all = TRUE) %>%
     .[,-"value", with = FALSE]
 ```
 
@@ -257,10 +257,10 @@ tableList <- list("Atlantic" = list("Female" = At.F,
 
 Check for each Sex and Biome if we can compare for each variable:
 ``` {r lapplyoflapply, echo = FALSE, eval = TRUE, include = FALSE}
-source(file.path(getwd(),"R functions/checkComparison.R"))
+source(file.path(getwd(),"R_functions/checkComparison.R"))
 
-compSEX <- checkComparison(comparisonGroup = "SEX", tableList = tableList, biome = tableList$biome, sex = tableList$sex)
-compBIOME <- checkComparison(comparisonGroup = "BIOME", tableList = tableList, biome = biome, sex = sex) 
+compSEX <- checkComparison(comparisonGroup = "SEX", tableList = tableList, biome = biome, sex = sex)
+compBIOME <- checkComparison(comparisonGroup = "BIOME", tableList = tableList, biome = biome, sex = sex)
 ```
 
 Here are the results of the tests by factors: 
@@ -277,7 +277,7 @@ knitr::kable(as.data.table(compBIOME))
 
 The following table presents a summary of the analysis to be performed for each variable:
 ```{r final.table, echo=TRUE, eval=TRUE}
-source(file.path(getwd(),"R functions/createTestsTable.R"))
+source(file.path(getwd(),"R_functions/createTestsTable.R"))
 
 final.table <- createTestsTable(fDataCol = fDataCol, 
                                 hembio = hembio,
@@ -296,7 +296,7 @@ Now, for each variable I just need to merge the last table (`final.table`) with 
 **NOTE: The column `test` of the new tables (`SEX.table` and `BIOME.table`) only generically indicate if I have 2 or more groups to compare (by, respectively, assigning `T` or `ANOVA`). The tests, after considering not only the number of groups, but also if the variable allows for a parametric test is `statTest`.**
 
 ```{r analysis.table, echo=FALSE, eval=TRUE, include = FALSE}
-source(file.path(getwd(),"R functions/mergeLastTables.R"))
+source(file.path(getwd(),"R_functions/mergeLastTables.R"))
 
 SEX <- mergeLastTables(grouping = "SEX",
                        biome = biome, 
@@ -316,14 +316,12 @@ knitr::kable(SEX)
 knitr::kable(BIOME)
 ```
 
-As we have the final tables indicating which tests need to be performed, we built a function to perform these tests. The function is on a separate `R script` on the folder **R functions** and is automatically sourced with the code below.  
+As we have the final tables indicating which tests need to be performed, we built a function to perform these tests. The function is on a separate `R script` on the folder **R_functions** and is automatically sourced with the code below.  
 
 *NOTE: It is necessary to run the code below in the given order as the first function creates a table to exclude variables that are significant for age from the sex analysis and so forth.*
 
 ```{r stats, echo=FALSE, eval=TRUE}
-
-source(file.path(getwd(),"R functions/statTests.R"))
-
+source(file.path(getwd(),"R_functions/statTests.R"))
 statSEX <- statTests(listTests = SEX, 
                      testsPerVariable = final.table, 
                      originalDT = hembio, 
@@ -350,7 +348,7 @@ knitr::kable(as.data.table(statBIOME), caption = "Comparison of BIOMES")
 At last, we just need to know for ANOVA and Kruskal-Wallis tests (tests for more than 2 groups) that returned significant differences, which specific groups are different from each others:
 
 ```{r}
-source(file.path(getwd(),"R functions/posthocTests.R"))
+source(file.path(getwd(),"R_functions/posthocTests.R"))
 
 phBIOME <- posthocTests(statTable = statBIOME,
                          testsTable = final.table,

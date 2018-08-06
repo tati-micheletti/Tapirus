@@ -1,16 +1,15 @@
 mergeLastTables <- function(grouping,
                             biome = biome, 
                             sex = sex,
-                            compTABLE,
+                            compTABLE = compSEX,
                             testsTable = final.table){
 
   if(grouping == "SEX"){
-
     SEX.table <- lapply(biome, function(biome){
-      TEST <- apply(compSEX[[biome]], 1, function(rows){
+      TEST <- apply(compTABLE[[biome]], 1, function(rows){
         
-        line <- which(final.table[,VARIABLES]==rows["variable"])
-        tst <- final.table[line,TEST]
+        line <- which(testsTable[,VARIABLES]==rows["variable"])
+        tst <- testsTable[line,TEST]
         
         TEST <- ifelse(rows["test"]=="T",
                        ifelse(tst=="PARAMETRIC","T-TEST","Mann-WhitneyU"),
@@ -22,7 +21,7 @@ mergeLastTables <- function(grouping,
     names(SEX.table) <- biome
     
     SEX <- lapply(biome, function(biome){
-      statTest <- cbind(compSEX[[biome]], statTest = SEX.table[[biome]])
+      statTest <- cbind(compTABLE[[biome]], statTest = SEX.table[[biome]])
       return(statTest)
     })
     
@@ -35,10 +34,10 @@ mergeLastTables <- function(grouping,
   
   if(grouping == "BIOME"){
     
-    BIOME.table <- apply(compBIOME, 1, function(rows){
+    BIOME.table <- apply(compTABLE, 1, function(rows){
       
-      line <- which(final.table[,VARIABLES]==rows["variable"])
-      tst <- final.table[line,TEST]
+      line <- which(testsTable[,VARIABLES]==rows["variable"])
+      tst <- testsTable[line,TEST]
       
       TEST <- ifelse(rows["test"]=="T",
                      ifelse(tst=="PARAMETRIC","T-TEST","Mann-WhitneyU"),
@@ -48,7 +47,7 @@ mergeLastTables <- function(grouping,
       return(TEST)
     })
     
-    BIOME <- cbind(compBIOME, statTest = BIOME.table)
+    BIOME <- cbind(compTABLE, statTest = BIOME.table)
     
   }
   

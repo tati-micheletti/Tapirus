@@ -1,5 +1,4 @@
 
-
 statTests <- function(listTests, 
                       testsPerVariable = final.table, 
                       originalDT = hembio, 
@@ -12,17 +11,15 @@ suppressWarnings({
   depth <- function(this) ifelse(is.list(this), 1L + max(sapply(this, depth)), 0L)
 
   # ========= FOR SEX ==========
-
   if (depth(listTests)==2){
-    
   sexStats <- lapply(biome, function(biome){
-      TEST <- apply(SEX[[biome]], 1, function(rows){
+      TEST <- apply(listTests[[biome]], 1, function(rows){
 
           # Extracting information for the variable to make the analysis
-          line <- which(final.table[,VARIABLES]==rows["variable"])
-          tst <- final.table[line,TEST]
-          trans <- final.table[line,TRANSFORMATION]
-          nor <-  final.table[line,NORMALITY]
+          line <- which(testsPerVariable[,VARIABLES]==rows["variable"])
+          tst <- testsPerVariable[line,TEST]
+          trans <- testsPerVariable[line,TRANSFORMATION]
+          nor <-  testsPerVariable[line,NORMALITY]
           
           namesRows <- names(rows)
           rows <- data.table(matrix(rows, nrow=1))
@@ -33,8 +30,8 @@ suppressWarnings({
           # If statTest is not NA, execute statistics
           # Composing the dataset
           invisible(ifelse(nor=="NORMAL"|trans=="NON-NORMAL", 
-                           dataToUse <- data.table(cbind(SEX=originalDT$Sex, originalDT[rows[,variable]])),
-                           dataToUse <- data.table(cbind(SEX=logDT$Sex, logDT[rows[,variable]]))))
+                           dataToUse <- data.table(cbind(SEX=originalDT$sex, originalDT[rows[,variable]])),
+                           dataToUse <- data.table(cbind(SEX=logDT$sex, logDT[rows[,variable]]))))
           dataToUse <- dataToUse[as.vector(!is.na(dataToUse[,2])),]
           
           invisible(ifelse(is.na(statTest), testResult <- NA,
@@ -61,7 +58,7 @@ suppressWarnings({
     names(sexStats) <- biome
 
     SEX <- lapply(biome, function(biome){
-    p.SEX <- cbind(SEX[[biome]], p.value = sexStats[[biome]])
+    p.SEX <- cbind(listTests[[biome]], p.value = sexStats[[biome]])
     return(p.SEX)
   })
   names(SEX) <- biome
@@ -72,10 +69,9 @@ suppressWarnings({
       return(sig.SEX)
     })
   names(SEX) <- biome
-  
  # Variables that are out for the sex analysis (those that were significant for SEX)
  outBIOME.list <- lapply(biome, function(biome){
-     DF <- data.frame(SEX[[biome]])
+     DF <- data.frame(listTests[[biome]])
      sig.rows <- as.character(DF$variable[which(DF$Significancy=="Significant")])
      return(sig.rows)
    })
@@ -88,15 +84,15 @@ suppressWarnings({
 
   if (depth(listTests)==1){
     
-       biomeStats <- apply(BIOME, 1, function(rows){
+       biomeStats <- apply(listTests, 1, function(rows){
        
         # Extracting information for the variable to make the analysis
          groups <- strsplit(rows[["whichGroups"]], ":") %>%
            .[[1]]
-        line <- which(final.table[,VARIABLES]==rows["variable"])
-        tst <- final.table[line,TEST]
-        trans <- final.table[line,TRANSFORMATION]
-        nor <-  final.table[line,NORMALITY]
+        line <- which(testsPerVariable[,VARIABLES]==rows["variable"])
+        tst <- testsPerVariable[line,TEST]
+        trans <- testsPerVariable[line,TRANSFORMATION]
+        nor <-  testsPerVariable[line,NORMALITY]
         
         namesRows <- names(rows)
         rows <- data.table(matrix(rows, nrow=1))
@@ -107,8 +103,8 @@ suppressWarnings({
         # If statTest is not NA, execute statistics
         # Composing the dataset
         invisible(ifelse(nor=="NORMAL"|trans=="NON-NORMAL", 
-                         dataToUse <- data.table(cbind(BIOME=originalDT$Biome, originalDT[rows[,variable]])),
-                         dataToUse <- data.table(cbind(BIOME=logDT$Biome, logDT[rows[,variable]]))))
+                         dataToUse <- data.table(cbind(BIOME=originalDT$biome, originalDT[rows[,variable]])),
+                         dataToUse <- data.table(cbind(BIOME=logDT$biome, logDT[rows[,variable]]))))
         dataToUse <- dataToUse[as.vector(!is.na(dataToUse[,2])),] %>%
           .[BIOME %in% groups,]
         
@@ -132,13 +128,12 @@ suppressWarnings({
         return(p)
       })
 
- BIOME <- cbind(BIOME, p.value = biomeStats)
-  
+ BIOME <- cbind(listTests, p.value = biomeStats)
+
+  # Adding 'SIGNIFICANT'
+  BIOME$Significancy <- ifelse(!is.na(BIOME$p.value) & BIOME$p.value < 0.05, "Significant","")
   }
   
-  # Adding 'SIGNIFICANT'
-  BIOME$Significancy <- ifelse(!is.na(BIOME$p.value)&BIOME$p.value<0.05,"Significant","")
-
   # ======== RETURNS
 
   if (exists("sexStats")) return(SEX)
