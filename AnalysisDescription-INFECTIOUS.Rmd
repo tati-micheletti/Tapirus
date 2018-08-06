@@ -3,15 +3,15 @@ title: "Tapirus terrestris: Health analysis - INFECTIOUS DISEASES"
 author: "Tati Micheletti"
 date: "16 May 2018"
 output: html_document
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "Results") })
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 library(data.table)
 library(reproducible)
-library(rdrop2)
 library(stats)
- token <- drop_auth()
 ```
 
 
@@ -40,53 +40,154 @@ SE = sqrt(pH*(1-pH)/(n+1)), where pH = (x+1/2)/(n+1), `x` is the number of "posi
 
 ## Coding
 
+### 1. Load Data
 Loading the data to work with from a `.csv` file and subsetting to diseases that have both positive and negative results.
 ```{r load}
-infectiousFull <- data.table::fread("C:/Users/Tati/Dropbox/dataTapirus/diseasesPrev.csv") # loading from the local computer
-for (i in names(infectiousFull)) infectiousFull[get(i)=="", (i) := NA]
+infectiousFullAll <- data.table::fread(file.path(getwd(), "dataTapirus/Diseases/diseases.csv")) # loading from the dataTapirus
+infectiousFull <-  infectiousFullAll[]#[biome == "CERRADO"]
+  for (i in names(infectiousFull)) infectiousFull[get(i)=="", (i) := NA]
 cols <- colnames(infectiousFull)
 colsToKeep <- unlist(lapply(X = cols, FUN = function(columns){
   if ("Negativo" %in% infectiousFull[[columns]] &
-      "REAGENTE" %in% infectiousFull[[columns]])
+      "REAGENTE" %in% infectiousFull[[columns]] &
+      !"RESULTADO" %in% infectiousFull[[columns]])
     return(TRUE) else return(FALSE)
 })
 )
-infectiousFull <- infectiousFull[, colsToKeep, with = FALSE]
+infectiousFull <- infectiousFull[, colsToKeep, with = FALSE] %>%
+  cbind(infectiousFullAll[, "biome"], .)
 infectiousFull
+
+prevalTableTotalInfec <- infectiousFull[, lapply(.SD, function(x) sum(!is.na(x))), by = biome, .SDcols = names(infectiousFull)[names(infectiousFull) != "biome"]]
+
 ```
 
-Now we need to calculate frequencies of positives:
-
+### 2. calculate frequencies of positives counts
 ```{r calculate_fre}
-cols <- colnames(infectiousFull)
-counts <- data.table::rbindlist(lapply(X = names(infectiousFull), FUN = function(x){
-  tble <- as.data.frame(table(infectiousFull[[x]]), responseName = "freq")
-  colnames(tble)[1] <- "result"
-  tble$disease <- x
-  return(tble)
+cols <- colnames(infectiousFull)[colnames(infectiousFull) != "biome"]
+counts <- data.table::rbindlist(lapply(X = cols, FUN = function(dis){
+    sb <- infectiousFull[, c("biome", ..dis)]
+    tbl <- as.data.frame.matrix(table(sb))
+    colnames(tbl)[which(names(tbl) == "Negativo")] <- "negative"
+    colnames(tbl)[which(names(tbl) == "REAGENTE")] <- "freq"
+    tbl$biome <- rownames(tbl)
+    tbl$disease <- dis
+    sb <- tbl
+  if (!"ATLANTIC" %in% unique(sb$biome)){
+    rowAT <- data.table::data.table(biome = "ATLANTIC",
+                                    species = dis,
+                                    freq = 0,
+                                    negative = prevalTableTotalInfec[biome == "ATLANTIC", ..dis])
+    sb <- rbind(sb, rowAT)
+  }
+    if (!"CERRADO" %in% unique(sb$biome)){
+    rowCE <- data.table::data.table(biome = "CERRADO",
+                                    species = dis,
+                                    freq = 0,
+                                    negative = prevalTableTotalInfec[biome == "CERRADO", ..dis])
+    sb <- rbind(sb, rowCE)
+    }
+    if (!"PANTANAL" %in% unique(sb$biome)){
+    rowPT <- data.table::data.table(biome = "PANTANAL",
+                                    species = dis,
+                                    freq = 0,
+                                    negative = prevalTableTotalInfec[biome == "PANTANAL", ..dis])
+    sb <- rbind(sb, rowPT)
+    }
+  return(sb)
 })
 )
 ``` 
 
-And at last, we have to calculate the estimate (prevalence) and respective confidence intervals:
+### 3. Calculate the estimate (prevalence) and respective confidence intervals
 ``` {r ci}
 CI <- data.table::rbindlist(lapply(X = cols, FUN = function(dis){
-  sb <- counts[disease == dis,]
-  total <- sum(sb$freq)
-  positive <- sb[result == "REAGENTE", freq]
-  CI.calc <- stats::binom.test(x = positive, n = total, p = 0.5,
+    biome.ci <- data.table::rbindlist(lapply(X = unique(counts$biome), FUN = function(biom){
+  sb <- counts[biome == biom & disease == dis,]
+  total <- sum(sb$freq, sb$negative)
+  CI.calc <- stats::binom.test(x = sb$freq, n = total, p = 0.5,
                                    alternative="two.sided",
                                    conf.level=0.95)
   CI.low <- min(CI.calc$conf.int)
   CI.up <- max(CI.calc$conf.int)
-  Ci <- data.table::data.table(disease = dis,
+  Ci <- data.table::data.table(biome = biom,
+                               disease = dis,
                                prevalence = round(CI.calc$estimate, 3)*100,
                                CI = paste0(round(CI.low, 3)*100, " - ", round(CI.up, 3)*100))
   return(Ci)
 })
 )
+    return(biome.ci)
+})
+)
 
 CI
 
+write.csv(x = CI, file = file.path(getwd(), "Results/infectiousPrevalence.csv"))
+```
+
+#### 4. X2 of the diseases' prevalence 
+```{r prevalence}
+biomeList <- infectiousFullAll[, "biome"]
+  for (i in names(infectiousFullAll)) infectiousFullAll[get(i)=="", (i) := NA]
+cols <- colnames(infectiousFullAll)
+colsToKeep <- unlist(lapply(X = cols, FUN = function(columns){
+  if ("Negativo" %in% infectiousFullAll[[columns]] &
+      "REAGENTE" %in% infectiousFullAll[[columns]] & 
+      !"RESULTADO" %in% infectiousFullAll[[columns]])
+    return(TRUE) else return(FALSE)
+})
+)
+infectiousFullAll <- infectiousFullAll[, colsToKeep, with = FALSE] %>%
+  cbind(biomeList, .)
+
+counts <- data.table::rbindlist(lapply(X = names(infectiousFullAll)[names(infectiousFullAll) != "biome"], 
+                                       FUN = function(dis){
+      countsByBiome <- data.table::rbindlist(lapply(X = unique(infectiousFullAll$biome), FUN = function(biom){
+          sb <- infectiousFullAll[biome == biom, ]
+          tble <- as.data.frame(table(sb[[dis]]), responseName = "freq")
+          colnames(tble)[1] <- "result"
+          tble$disease <- dis
+          tble$biome <- biom
+            if (all(length(unique(tble$result)) == 1 & 
+              unique(tble$result) == "Negativo")) {
+            rowREAGENTE <- data.table::data.table(result = "REAGENTE", 
+                                                  freq = 0,
+                                                  disease = dis,
+                                                  biome = biom)
+           tble <- rbind(tble, rowREAGENTE)
+          }
+           if (all(length(unique(tble$result)) == 1 &
+               unique(tble$result) == "REAGENTE")) {
+            rowNEGATIVO <- data.table::data.table(result = "Negativo", 
+                                                  freq = 0,
+                                                  disease = dis,
+                                                  biome = biom)
+            tble <- rbind(tble, rowNEGATIVO)
+          }
+          return(tble)
+      })
+      )
+      return(countsByBiome)
+})
+)
+
+countsCast <- data.table::dcast.data.table(data = counts, formula = biome + disease ~ result, value.var = "freq")
+names(countsCast)[3:4] <- c("freq", "negative")
+
+x2diseases <- data.table::rbindlist(lapply(X = unique(countsCast[, disease]), FUN = function(dis){
+  sb <- countsCast[disease == dis, ]
+  matrix <- as.matrix(sb[, c("freq", "negative")])
+    rownames(matrix) <- sb$biome
+  x2 <- rcompanion::pairwiseNominalIndependence(matrix, compare = "row", fisher = TRUE,
+  gtest = FALSE, chisq = TRUE, method = "bonferroni", correct = "none",
+  digits = 3)
+  x2$species <- dis
+  return(invisible(x2))
+})
+)
+
+x2diseases
+write.csv(x = x2diseases, file = file.path(getwd(), "Results/X2infectious.csv"))
 ```
 

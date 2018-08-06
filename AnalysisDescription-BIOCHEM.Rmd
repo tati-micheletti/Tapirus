@@ -3,16 +3,18 @@ title: 'Tapirus terrestris: Health analysis of SEX and BIOME'
 author: "Tati Micheletti"
 date: "17 April 2018"
 output: html_document
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "Results") })
 ---
 
+## As of Aug 2018 this is not working. Still need to recode it (because of changes in the original table)
+
 ```{r setup, include=FALSE, echo = FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 library(data.table)
-library(rdrop2)
 library(car)
 library(dplyr)
 library(reshape2)
- token <- drop_auth()
 ```
 
 # Project Description
@@ -44,10 +46,8 @@ The groups were hierarchically designed as: Biome > Sex, i.e. Pantanal Males x P
 
 Loading the data to work with from a `.csv` file.
 ```{r load}
- hembio <- drop_read_csv("dataTapirus/hematobioqFull.csv", dtoken = token)
-# hembio <- read.csv("C:/Users/Tati/Dropbox/dataTapirus/hematobioqFull.csv") # loading from the local computer
+hembio <- read.csv(file.path(getwd(), "dataTapirus/Biochemestry and Hematology/biochemHemato.csv")) # loading from the dataTapirus
 ```
-**SIDE NOTE: If the dataloading fails, turn on the VPN!.**
 
 Here is the final complete table for biochemestry and hemathology (Mata Atlantica, Pantanal and Cerrado):
 ```{r Table HEMBIO, eval=TRUE, echo=FALSE}
@@ -85,7 +85,7 @@ Now, variables that are not normal (described as `NA` in the `Normality` column)
 
 ```{r variables transformation}
 var.transform <- as.character(sw.results$Variables[is.na(sw.results$Normality)])
-hembio.log <- cbind(hembio[,c("ID","Biome","Sex","Age")],log(hembio[,var.transform]))
+hembio.log <- cbind(hembio[, c("ID","biome","sex","ageClass")], log(hembio[,var.transform]))
 ```
 
 ```{r variables transformed, echo=FALSE, eval=TRUE}
@@ -138,13 +138,13 @@ This test was performed to observe if the samples present a homogeneity of varia
 ```{r levene}
 source(file.path(getwd(),"R functions/Levene.R"))
 
-  PT <- hembio.homog[hembio.homog$Biome=="Pantanal",]
-  AT <- hembio.homog[hembio.homog$Biome=="Atlantic",]
-  CR <- hembio.homog[hembio.homog$Biome=="Cerrado",]
+  PT <- hembio.homog[hembio.homog$biome=="Pantanal",]
+  AT <- hembio.homog[hembio.homog$biome=="Atlantic",]
+  CR <- hembio.homog[hembio.homog$biome=="Cerrado",]
 
-lv.PT <- levene.p(PT,fDataCol, "Sex")
-lv.AT <- levene.p(AT,fDataCol, "Sex") 
-lv.CR <- levene.p(CR,fDataCol, "Sex")
+lv.PT <- levene.p(PT,fDataCol, "sex")
+lv.AT <- levene.p(AT,fDataCol, "sex") 
+lv.CR <- levene.p(CR,fDataCol, "sex")
 ```
 
 ```{r homogen final tables, echo=FALSE, eval=TRUE}
@@ -183,7 +183,7 @@ for (i in 1:nrow(binary.dt)){
         binary.dt[i,j] <- 1
   }
 }
-binary.dt$BSA <- paste(binary.dt$Biome, binary.dt$Sex, sep = ":")
+binary.dt$BSA <- paste(binary.dt$biome, binary.dt$sex, sep = ":")
 binary.dt <- binary.dt[,4:ncol(binary.dt)]
 count.df <- data.table(binary.dt) %>% 
   melt(id.var="BSA") %>%
@@ -192,7 +192,7 @@ count.df <- data.table(binary.dt) %>%
   summarise(count=n()) %>% 
   group_by(BSA, variable) %>%
   as.data.frame() %>%
-    tidyr::separate(col = BSA, sep = ":", into = c("Biome","Sex")) %>%
+    tidyr::separate(col = BSA, sep = ":", into = c("biome","sex")) %>%
     as.data.table()
 ```
 
@@ -219,17 +219,18 @@ count.df <- cbind(count.df,meanTestBiome,meanTestSex)
 For the meanTests that have `YES`, we can run either a T-Test or an ANOVA (or their comparable non-parametric).
 To identify which one will be done fore each variable/sex/biome, we will create a complete table with all variables, sex biomes:
 ```{r expanded.grid}
-var.excl <- c("Sex", "Biome", "Age")
+var.excl <- c("sex", "biome", "ageClass")
 variables <- as.character(colnames(hembio.dt))
 variables <- c(variables[!variables %in% var.excl])
-biome <- as.character(unique(hembio.dt$Biome))
-sex <- as.character(unique(hembio.dt$Sex))
+biome <- as.character(unique(hembio.dt$biome))
+sex <- as.character(unique(hembio.dt$sex))
 completeTable <- expand.grid(variable = variables, Sex = sex, Biome = biome) %>%
   data.table()
 ```
 
 Now we merge the complete table and the one with the counts:
 ```{r join.tables}
+
 joinTable <- merge(count.df,completeTable, all = TRUE) %>%
     .[,-"value", with = FALSE]
 ```
@@ -237,14 +238,14 @@ joinTable <- merge(count.df,completeTable, all = TRUE) %>%
 For each variable, I have to check for each age of each sex of each Biome, if we have at least 1 count.
 We subset this table per Biome and Sex, to observe the variables for each age and for sex:
 ```{r subset, echo=FALSE, eval=TRUE, include = FALSE}
-At.F <- joinTable[Biome=="Atlantic"&Sex=="Female"]
-At.M <- joinTable[Biome=="Atlantic"&Sex=="Male"]
+At.F <- joinTable[biome=="Atlantic"&sex=="Female"]
+At.M <- joinTable[biome=="Atlantic"&sex=="Male"]
 
-Pt.F <- joinTable[Biome=="Pantanal"&Sex=="Female"]
-Pt.M <- joinTable[Biome=="Pantanal"&Sex=="Male"]
+Pt.F <- joinTable[biome=="Pantanal"&sex=="Female"]
+Pt.M <- joinTable[biome=="Pantanal"&sex=="Male"]
 
-Cr.F <- joinTable[Biome=="Cerrado"&Sex=="Female"]
-Cr.M <- joinTable[Biome=="Cerrado"&Sex=="Male"]
+Cr.F <- joinTable[biome=="Cerrado"&sex=="Female"]
+Cr.M <- joinTable[biome=="Cerrado"&sex=="Male"]
 
 tableList <- list("Atlantic" = list("Female" = At.F,                                  
                                     "Male" = At.M), 
@@ -258,8 +259,8 @@ Check for each Sex and Biome if we can compare for each variable:
 ``` {r lapplyoflapply, echo = FALSE, eval = TRUE, include = FALSE}
 source(file.path(getwd(),"R functions/checkComparison.R"))
 
-compSEX <- checkComparison(comparisonGroup = "SEX", tableList = tableList, biome = biome, sex = sex)
-compBIOME <- checkComparison(comparisonGroup = "BIOME", biomeTable = biomeTable, tableList = tableList, biome = biome, sex = sex)
+compSEX <- checkComparison(comparisonGroup = "SEX", tableList = tableList, biome = tableList$biome, sex = tableList$sex)
+compBIOME <- checkComparison(comparisonGroup = "BIOME", tableList = tableList, biome = biome, sex = sex) 
 ```
 
 Here are the results of the tests by factors: 

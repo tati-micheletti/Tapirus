@@ -1,7 +1,6 @@
-checkComparison <- function(comparisonGroup, biomeTable = biomeTable, tableList = tableList, biome = biome, sex = sex){
- 
+checkComparison <- function(comparisonGroup, tableList = tableList, biome = biome, sex = sex){
   # ~ SEX ~
-  
+  browser()
 if (comparisonGroup == "SEX"){  
   compSEX <- lapply(biome, function(biome){
     tests1 <- lapply(sex, function(sex){

@@ -3,22 +3,17 @@ title: "Tapirus terrestris: Health analysis - MICROBIOLOGY"
 author: "Tati Micheletti"
 date: "May 15, 2018"
 output: html_document
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "Results") })
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 library(data.table)
 library(reproducible)
-library(rdrop2)
-library(car)
-library(dplyr)
-library(plyr)
-library(reshape2)
 library(rcompanion)
 library(betapart)
- token <- drop_auth()
 ```
-
 
 # Project Description
 
@@ -46,78 +41,135 @@ Prevalence bac2: 1/5 = 0.2 or 20%
 ## Coding
 
 ### 1. Load Data
-
 Loading the data to work with from a `.csv` file.
 ```{r load}
-microbioFull <- data.table::fread("C:/Users/Tati/Dropbox/dataTapirus/microbioCerradoFull.csv")
-microbioBinary <- data.table::fread("C:/Users/Tati/Dropbox/dataTapirus/microbioCerradoBinary.csv")
-microbioPTAT <- data.table::fread("C:/Users/Tati/Dropbox/dataTapirus/PTATmicrobioFull.csv")
+tryCatch({
+  prevalence <- data.table::fread(file.path(getwd(), "dataTapirus/Microbiology/microbiology.csv")
+                                  )}, error = function(e){
+  stop("File 'microbiology.csv' not found. You likely do not have access to the data. Please contact the webpage author for more information.")
+}
+)
+
 ```
-**SIDE NOTE: If the dataloading fails, turn on the VPN!.**
 
-### 2. Prevalence calculation:
+### 2. Prevalence of bacterial species in the three populations (independently of the cavity) 
+```{r prevalence}
 
-OBS.: Save the table to insert in the .xlsx make it a template for next captures
-
-```{r columnsForPrevalence}
-sumNonEmpty <- data.table::data.table(cavities = names(microbioBinary)[2:ncol(microbioBinary)], 
-                                      numberSamples = apply(X = microbioBinary, MARGIN = 2, 
-                                                            FUN = function(x)
-                                                              sum(x != ""))[2:ncol(microbioBinary)])
-
-tableCerrado <- data.table::rbindlist(lapply(X = names(microbioFull)[2:ncol(microbioFull)], FUN = function(x) {
-  a <- plyr::count(microbioFull, x)
-  a["cavity"] <- names(a)[1]
-  a["biome"] <- "CERRADO"
-  names(a) <- c("species", "frequency", "cavities", "biome")
-  a <- a[!(a$species == ""),]
-  return(a)
+prevalTable <- prevalence[, .(freq = sum(frequency)), by = c("biome", "species")]
+prevalTableTotal <- prevalTable[, .(totalCounts = sum(freq)), by = "biome"]
+data.table::rbindlist(lapply(X = unique(prevalTable$biome), FUN = function(bio){
+  neg <- prevalTableTotal[biome == bio, totalCounts]
+  prevalTable[biome == bio, negative := neg - freq]
   })
 )
 
-tableCerrado$numberSamples <- apply(X = tableCerrado, MARGIN = 1, FUN = function(x) {
-  num <- sumNonEmpty[cavities == x["cavities"], numberSamples]
-  return(num)
-  })
+cols <- unique(prevalTable$species) %>%
+  .[. != "NEGATIVE"]
 
+biomes <- unique(prevalTable$biome)
 
-prevalenceMicrobio <- data.table::rbindlist(lapply(X = tableCerrado[, species], FUN = function(sp){
-  sb <- tableCerrado[tableCerrado[, species == sp],]
-  cavPrev <- data.table::rbindlist(lapply(X = sb[, cavities], FUN = function(cav){
-    cavTable <- sb[sb[, cavities == cav]]
-      total <- cavTable$numberSamples
-      positive <- cavTable$frequency
-  CI.calc <- stats::binom.test(x = positive, n = total, p = 0.5,
+CI <- data.table::rbindlist(lapply(X = cols, FUN = function(bac){
+  biome.ci <- data.table::rbindlist(lapply(X = biomes, FUN = function(biom){
+      sb <- prevalTable[biome == biom & species == bac,]
+  total <- sb$freq + sb$negative
+  positive <- sb$freq
+  if (nrow(sb) != 0) {
+      CI.calc <- stats::binom.test(x = positive, n = total, p = 0.5,
                                    alternative="two.sided",
                                    conf.level=0.95)
   CI.low <- min(CI.calc$conf.int)
   CI.up <- max(CI.calc$conf.int)
-
-  Ci <- data.table::data.table(bacteria = sp,
-                               cavity = cav,
+  Ci <- data.table::data.table(bacteria = bac,
+                               biome = biom,
                                prevalence = round(CI.calc$estimate, 3)*100,
-                               CI.low = round(CI.low, 3)*100,
-                               CI.up = round(CI.up, 3)*100,
-                               CI.Interval = paste0(round(CI.low, 3)*100, " - ", round(CI.up, 3)*100))
-    return(Ci)
-  }))
-  return(cavPrev)
+                               CI = paste0(round(CI.low, 3)*100, " - ", round(CI.up, 3)*100))
+  } else {
+      Ci <- data.table::data.table(bacteria = bac,
+                               biome = biom,
+                               prevalence = 0,
+                               CI = paste0("0 - 0"))
+                               
+  }
+  return(Ci)
+
+  })
+  )
+  return(biome.ci)
 })
 )
 
-tableCerrado$prevalence <- tableCerrado$frequency/tableCerrado$numberSamples*100
-finalPrevalence <- rbind(microbioPTAT, tableCerrado)
+CI
 
-prevalenceMicrobio
-
-# write.csv(x = finalPrevalence, file = "C:/Users/Tati/Dropbox/dataTapirus/prevalenceMicrobio3AUG18.csv")
-# Done already!
+write.csv(x = CI, file = file.path(getwd(), "Results/microbioPrevalence.csv"))
 ```
 
-#### 3. X2 for the prevalence per cavity (we need to exclude cavities that were not accessed in PT and MA)
-```{r X2_prevalence}
-listX2 <- lapply(X = unique(finalPrevalence$species[finalPrevalence$species != "NEGATIVE"]), FUN = function(sp){
-  assign(x = sp, value = finalPrevalence[species == sp, c("biome", "cavities", "frequency")])
+### 3. X2 of prevalence per bacterial species (sum in cavities) 
+```{r x2_total}
+
+x2TotalTable <- prevalence[, c("biome", "species", "frequency")]
+x2TotalCast <- data.table::dcast.data.table(data = x2TotalTable, formula = biome ~ species, 
+                                            value.var = "frequency", fun.aggregate = sum) %>%
+  .[,!"NEGATIVE"]
+
+x2Total <- as.matrix(x2TotalCast[,2:ncol(x2TotalCast)])
+rownames(x2Total) <- x2TotalCast$biome
+x2TotalComp <- suppressWarnings(rcompanion::pairwiseNominalIndependence(x2Total, compare = "row", fisher = TRUE,
+  gtest = FALSE, chisq = FALSE, method = "bonferroni", correct = "none",
+  digits = 3, workspace = 1e7, simulate.p.value = TRUE))
+
+x2TotalComp
+
+write.csv(x = x2TotalComp, file = file.path(getwd(), "Results/X2TotalMicrobio.csv"))
+```
+
+Here we see that considering the bacterial flora independently of the cavity, all locations are different. However, we do have a lot of data (lots of bacteria species), which means we might be inflating the results (seeing difference when there is not much) Therefore, we should also make a X2 for each location and EACH bacteria.
+
+```{r each_bac}
+x2each <- data.table::rbindlist(lapply(X = unique(prevalTable[species != "NEGATIVE", species]), FUN = function(bac){
+  browser()
+  sb <- prevalTable[species == bac, ]
+  browser()
+  if (!"ATLANTIC" %in% unique(sb$biome)){
+    rowAT <- data.table::data.table(biome = "ATLANTIC",
+                                    species = bac,
+                                    freq = 0,
+                                    negative = prevalTableTotal[biome == "ATLANTIC", totalCounts])
+    sb <- rbind(sb, rowAT)
+  }
+    if (!"CERRADO" %in% unique(sb$biome)){
+    rowCE <- data.table::data.table(biome = "CERRADO",
+                                    species = bac,
+                                    freq = 0,
+                                    negative = prevalTableTotal[biome == "CERRADO", totalCounts])
+    sb <- rbind(sb, rowCE)
+    }
+    if (!"PANTANAL" %in% unique(sb$biome)){
+    rowPT <- data.table::data.table(biome = "PANTANAL",
+                                    species = bac,
+                                    freq = 0,
+                                    negative = prevalTableTotal[biome == "PANTANAL", totalCounts])
+    sb <- rbind(sb, rowPT)
+  }
+  matrix <- as.matrix(sb[, c("freq", "negative")])
+    rownames(matrix) <- sb$biome
+  x2 <- pairwiseNominalIndependence(matrix, compare = "row", fisher = TRUE,
+  gtest = FALSE, chisq = TRUE, method = "bonferroni", correct = "none",
+  digits = 3)
+  x2$species <- bac
+  return(suppressWarnings(x2))
+})
+)
+
+x2each
+
+write.csv(x = x2each, file = file.path(getwd(), "Results/X2EachMicrobio.csv"))
+```
+
+
+### 5. Prevalence calculation per bacterial species per cavity
+```{r per_cavity}
+listX2 <- lapply(X = unique(prevalence$species[prevalence$species != "NEGATIVE"]), FUN = function(sp){
+  assign(x = sp, value = prevalence[species == sp, c("biome", "cavities", "frequency")])
   assign(x = sp, value = data.table::dcast(get(sp), biome ~ cavities, value.var = "frequency"))
   if (nrow(get(sp)) == 3){
     eval(parse(text = paste0("attributes(", sp, ")[['species']] <- sp")))
@@ -142,10 +194,10 @@ x2 <- lapply(X = listX2, FUN = function(x){
   for (i in names(x)) x[is.na(get(i)), (i) := 0]
   matrix <- as.matrix(x[,2:ncol(x)])
   rownames(matrix) <- x$biome
-  #chisq.test(x = matrix, simulate.p.value = TRUE)
-  pairwiseNominalIndependence(matrix, compare = "row", fisher = TRUE,
+  x2 <- pairwiseNominalIndependence(matrix, compare = "row", fisher = TRUE,
   gtest = FALSE, chisq = TRUE, method = "bonferroni", correct = "none",
   digits = 3)
+  return(suppressWarnings(x2))
 })
 
 X2pVal <- rbindlist(lapply(X = names(x2), FUN = function(species){
@@ -154,17 +206,17 @@ X2pVal <- rbindlist(lapply(X = names(x2), FUN = function(species){
 })
 )
 X2pVal
+
+write.csv(x = X2pVal, file = file.path(getwd(), "Results/X2PerCavityMicrobio.csv"))
 ```
 
 In this table we can see that the p of both Fisher and X2 tests for E. coli are significant (Cerrado being different from Pantanal and MT Atlantica), but as we have to correct because of the low number of samples, they become non-significant. For `staphylococcusAureus` is not significant. 
 
-#### 4. Similarity index (IF need to chose between PT and MT, do it with Pantanal)
-
+### 6. Similarity index
 Prepare the table for Jaccard: rows are sites, columns are species
-
 ```{r Jaccard2}
 colsToKeep <- c("biome", "species")
-dissimDF <- data.table::dcast(data = finalPrevalence[, colsToKeep, with = FALSE], formula = biome ~ species) %>%
+dissimDF <- data.table::dcast(data = prevalence[, colsToKeep, with = FALSE], formula = biome ~ species) %>%
   as.data.frame()
 biomes <- dissimDF[, 1]
 dissimDF <- dissimDF[, 3:ncol(dissimDF)]
@@ -192,7 +244,9 @@ tdissimDF <- data.table::transpose(dissimDF)
 colnames(tdissimDF) <- rownames(dissimDF)
 rownames(tdissimDF) <- colnames(dissimDF)
 
-tdissimDF
+
+finalSimilarityTable
+
+write.csv(x = finalSimilarityTable, file = file.path(getwd(), "Results/SimilarityMicrobio.csv"))
 ```
 
-CONCLUSION: Similar MMATA ATLANTICA < CERRADO < PANTANAL (OH!!! >< )
