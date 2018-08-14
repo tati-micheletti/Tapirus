@@ -365,3 +365,73 @@ BIOME:
 options(width = 150)
 phBIOME
 ```
+
+
+### 4. Tables
+
+Here is the hematologic parameters table for CERRADO
+```{r hemoTable}
+hemo <- c("redBloodCellCount","hemoglobin","packedCellVolume","MCV","MCH",
+          "MCHC","whiteBloodCellCount","eosinophils","basophils", 
+          "lymphocytes", "monocytes", "bandNeutrophils", "segmentedNeutrophils", 
+          "totalNeutrophils", "plateletCount")
+IDs <- c("ID", "biome", "sex", "ageClass")
+bioq <- names(hembio)[!names(hembio) %in% hemo] %>%
+  .[!. %in% IDs]
+hemoCERRADO <- hembio[hembio$biome == "Cerrado", hemo]
+bioqCERRADO <- hembio[hembio$biome == "Cerrado", bioq]
+
+library(dplyr)
+library(tidyr)
+
+# FOR HEMO
+tableHemo <- tbl_df(hemoCERRADO)
+
+tableHemo.sum <- tableHemo %>%
+  select(redBloodCellCount, packedCellVolume, MCV,
+          whiteBloodCellCount, eosinophils, basophils, 
+          lymphocytes, monocytes, bandNeutrophils, segmentedNeutrophils, 
+          totalNeutrophils) %>% # select variables to summarise
+  summarise_all(funs(n = length(.), 
+                      Mean = mean,
+                      Min = min,
+                      Q1 = quantile(., 0.25), 
+                      Median = median, 
+                      Q3 = quantile(., 0.75), 
+                      Max = max,
+                      SD = sd,
+                      SE = sd(.)/sqrt(length(.))))
+
+# reshape it using tidyr functions
+
+tableHemo.sum.tidy <- tableHemo.sum %>% gather(stat, val) %>%
+  separate(stat, into = c("var", "stat"), sep = "_") %>%
+  spread(stat, val) %>%
+  select(var, n, Mean, Min, Q1, Median, Q3, Max, SD, SE) # reorder columns
+
+write.csv(x = tableHemo.sum.tidy, file = file.path(getwd(), "Results/hemoTable.csv"))
+
+# FOR BIOQ
+tableBioq <- tbl_df(bioqCERRADO)
+
+tableBioq.sum <- tableBioq %>%
+  summarise_all(funs(n = length(.), 
+                      Mean = mean,
+                      Min = min,
+                      Q1 = quantile(., 0.25), 
+                      Median = median, 
+                      Q3 = quantile(., 0.75), 
+                      Max = max,
+                      SD = sd,
+                      SE = sd(.)/sqrt(length(.))))
+
+# reshape it using tidyr functions
+
+tableBioq.sum.tidy <- tableBioq.sum %>% gather(stat, val) %>%
+  separate(stat, into = c("var", "stat"), sep = "_") %>%
+  spread(stat, val) %>%
+  select(var, n, Mean, Min, Q1, Median, Q3, Max, SD, SE) # reorder columns
+
+write.csv(x = tableBioq.sum.tidy, file = file.path(getwd(), "Results/bioqTable.csv"))
+```
+
