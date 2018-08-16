@@ -122,11 +122,62 @@ x2TotalComp
 write.csv(x = x2TotalComp, file = file.path(getwd(), "Results/X2TotalMicrobio.csv"))
 ```
 
-Here we see that considering the bacterial flora independently of the cavity, all locations are different. However, we do have a lot of data (lots of bacteria species), which means we might be inflating the results (seeing difference when there is not much) Therefore, we should also make a X2 for each location and EACH bacteria.
+Here we see that considering the bacterial flora independently of the cavity, all locations are different. However, we do have a lot of data (lots of bacteria species), which means we might be inflating the results (seeing difference when there is not much) Therefore, we should also make a X2 for each location and EACH bacteria. But first, I will calculate the prevalence in each cavity. Then we go for the X2 test.
+
+```{r prev_eachBac}
+prevalTableCav <- prevalence[biome == "CERRADO", .(freq = sum(frequency)), by = c("biome", "species", "cavities")]
+prevalTableTotalCerr <- prevalTableCav[, .(totalCounts = sum(freq)), by = "cavities"]
+
+data.table::rbindlist(lapply(X = unique(prevalTableCav$cavities), FUN = function(cav){
+  neg <- prevalTableTotalCerr[cavities == cav, totalCounts]
+  prevalTableCav[cavities == cav, negative := neg - freq]
+  })
+)
+
+cols <- unique(prevalTableCav$species) %>%
+  .[. != "NEGATIVE"]
+
+cavs <- unique(prevalTableCav$cavities)
+
+CI.cav <- data.table::rbindlist(lapply(X = cols, FUN = function(bac){
+  cavity.ci <- data.table::rbindlist(lapply(X = cavs, FUN = function(cav){
+      sb <- prevalTableCav[cavities == cav & species == bac,]
+  total <- sb$freq + sb$negative
+  positive <- sb$freq
+  if (nrow(sb) != 0) {
+      CI.calc <- stats::binom.test(x = positive, n = total, p = 0.5,
+                                   alternative="two.sided",
+                                   conf.level=0.95)
+  CI.low <- min(CI.calc$conf.int)
+  CI.up <- max(CI.calc$conf.int)
+  Ci <- data.table::data.table(bacteria = bac,
+                               cavity = cav,
+                               prevalence = round(CI.calc$estimate, 3)*100,
+                               CI = paste0(round(CI.low, 3)*100, " - ", round(CI.up, 3)*100))
+  } else {
+      Ci <- data.table::data.table(bacteria = bac,
+                                cavity = cav,
+                               prevalence = 0,
+                               CI = paste0("0 - 0"))
+                               
+  }
+  return(Ci)
+
+  })
+  )
+  return(cavity.ci)
+})
+)
+
+CI.cav
+
+write.csv(x = CI.cav, file = file.path(getwd(), "Results/microbioPrevalenceCavities.csv"))
+
+```
+
 
 ```{r each_bac}
 x2each <- data.table::rbindlist(lapply(X = unique(prevalTable[species != "NEGATIVE", species]), FUN = function(bac){
-  browser()
   sb <- prevalTable[species == bac, ]
   browser()
   if (!"ATLANTIC" %in% unique(sb$biome)){
