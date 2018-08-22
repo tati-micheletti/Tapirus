@@ -179,7 +179,6 @@ write.csv(x = CI.cav, file = file.path(getwd(), "Results/microbioPrevalenceCavit
 ```{r each_bac}
 x2each <- data.table::rbindlist(lapply(X = unique(prevalTable[species != "NEGATIVE", species]), FUN = function(bac){
   sb <- prevalTable[species == bac, ]
-  browser()
   if (!"ATLANTIC" %in% unique(sb$biome)){
     rowAT <- data.table::data.table(biome = "ATLANTIC",
                                     species = bac,
@@ -203,7 +202,7 @@ x2each <- data.table::rbindlist(lapply(X = unique(prevalTable[species != "NEGATI
   }
   matrix <- as.matrix(sb[, c("freq", "negative")])
     rownames(matrix) <- sb$biome
-  x2 <- pairwiseNominalIndependence(matrix, compare = "row", fisher = TRUE,
+  x2 <- rcompanion::pairwiseNominalIndependence(matrix, compare = "row", fisher = TRUE,
   gtest = FALSE, chisq = TRUE, method = "bonferroni", correct = "none",
   digits = 3)
   x2$species <- bac
